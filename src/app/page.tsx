@@ -333,9 +333,9 @@ export default function LineFlowPage() {
         <TooltipProvider>
           {(sessionState === 'running' || sessionState === 'paused') ? (
             <div className="w-full h-full flex items-center justify-center">
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md">
-                  <Progress value={progressValue} className="h-2 transition-all" indicatorClassName={getProgressColor()} />
-                  <div className="text-center text-xl font-mono font-semibold text-primary mt-2">{timeRemaining}s</div>
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md flex items-center gap-4">
+                  <div className="text-xl font-mono font-semibold text-primary w-16 text-right">{timeRemaining}s</div>
+                  <Progress value={progressValue} className="h-2 transition-all flex-1" indicatorClassName={getProgressColor()} />
               </div>
               
               {/* Navigation Buttons */}
