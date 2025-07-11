@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Loader2, Pause, Play, Trash2, X, Timer, Pin } from 'lucide-react';
+import { FolderOpen, Images, Loader2, Pause, Play, Trash2, X, Timer, Wand2 } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -115,24 +115,19 @@ export default function LineFlowPage() {
     handleReset();
   };
 
-  const handlePinterestFetch = async () => {
-    if (!pinterestQuery) {
-      toast({ title: 'Please enter a subject', variant: 'destructive' });
-      return;
-    }
+  const handleFetchImage = async () => {
     setIsFetching(true);
     try {
-      const result = await pinterestImageFetch({ subject: pinterestQuery });
+      const result = await pinterestImageFetch({ subject: pinterestQuery || "placeholder" });
       if (result.imageUrl) {
         setImages(prev => [...prev, result.imageUrl]);
-        toast({ title: 'Image added from Pinterest!' });
-        setPinterestQuery('');
+        toast({ title: 'Placeholder image added!' });
       } else {
-        toast({ title: 'Could not find an image', description: 'Try a different subject.', variant: 'destructive' });
+        toast({ title: 'Could not generate an image', description: 'Please try again.', variant: 'destructive' });
       }
     } catch (error) {
       console.error(error);
-      toast({ title: 'An error occurred', description: 'Failed to fetch image from Pinterest.', variant: 'destructive' });
+      toast({ title: 'An error occurred', description: 'Failed to fetch placeholder image.', variant: 'destructive' });
     } finally {
       setIsFetching(false);
     }
@@ -182,7 +177,7 @@ export default function LineFlowPage() {
                       {images.map((imgSrc, index) => (
                         <div key={`${imgSrc}-${index}`} className="flex items-center gap-2 p-1 rounded-md animate-in fade-in">
                           <Image src={imgSrc} alt={`Reference ${index + 1}`} width={40} height={40} className="rounded object-cover aspect-square" />
-                          <span className="text-sm truncate flex-1">{imgSrc.startsWith('blob:') ? `Image ${index + 1}` : 'Pinterest Image'}</span>
+                          <span className="text-sm truncate flex-1">{imgSrc.startsWith('blob:') ? `Image ${index + 1}` : 'Generated Image'}</span>
                           <Button variant="ghost" size="icon" className="size-7" onClick={() => removeImage(index)}><X className="size-4" /></Button>
                         </div>
                       ))}
@@ -193,11 +188,10 @@ export default function LineFlowPage() {
                  <Separator />
                 
                 <div>
-                  <Label htmlFor="pinterest-query" className="flex items-center gap-2 mb-2"><Pin className="size-4"/>Fetch from Pinterest</Label>
+                  <Label htmlFor="pinterest-query" className="flex items-center gap-2 mb-2"><Wand2 className="size-4"/>Generate Placeholder</Label>
                   <div className="flex gap-2">
-                    <Input id="pinterest-query" placeholder="e.g. dynamic poses" value={pinterestQuery} onChange={(e) => setPinterestQuery(e.target.value)} disabled={isFetching} />
-                    <Button onClick={handlePinterestFetch} disabled={isFetching}>
-                      {isFetching ? <Loader2 className="animate-spin" /> : 'Fetch'}
+                    <Button onClick={handleFetchImage} disabled={isFetching} className="w-full">
+                      {isFetching ? <Loader2 className="animate-spin" /> : 'Generate'}
                     </Button>
                   </div>
                 </div>
