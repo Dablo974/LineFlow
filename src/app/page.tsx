@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -19,15 +19,30 @@ import { Switch } from '@/components/ui/switch';
 type SessionState = 'idle' | 'running' | 'paused';
 type DisplayState = 'image' | 'interval';
 
+// Fisher-Yates shuffle algorithm
+const shuffleArray = (array: any[]) => {
+  let currentIndex = array.length, randomIndex;
+
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+};
+
 export default function LineFlowPage() {
   const [images, setImages] = useState<string[]>([]);
   const [duration, setDuration] = useState(30);
   const [intervalDuration, setIntervalDuration] = useState(5);
   const [audibleAlerts, setAudibleAlerts] = useState(false);
+  const [shuffle, setShuffle] = useState(true);
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [displayState, setDisplayState] = useState<DisplayState>('image');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(duration);
+  const [sessionImageOrder, setSessionImageOrder] = useState<string[]>([]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,14 +75,14 @@ export default function LineFlowPage() {
   }, [audibleAlerts]);
 
   const nextImage = useCallback(() => {
-    if (images.length === 0) return;
-    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+    if (sessionImageOrder.length === 0) return;
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % sessionImageOrder.length);
     setDisplayState('image');
     setTimeRemaining(duration);
-  }, [images.length, duration]);
+  }, [sessionImageOrder.length, duration]);
 
   useEffect(() => {
-    if (sessionState === 'running' && images.length > 0) {
+    if (sessionState === 'running' && sessionImageOrder.length > 0) {
       timerRef.current = setInterval(() => {
         setTimeRemaining((prev) => {
           const newTime = prev - 1;
@@ -103,7 +118,7 @@ export default function LineFlowPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [sessionState, images.length, duration, nextImage, displayState, intervalDuration, audibleAlerts, playBeep]);
+  }, [sessionState, sessionImageOrder.length, duration, nextImage, displayState, intervalDuration, audibleAlerts, playBeep]);
   
 
   useEffect(() => {
@@ -130,6 +145,11 @@ export default function LineFlowPage() {
     } else {
       setSessionState('running');
       if (sessionState === 'idle') {
+        if (shuffle) {
+          setSessionImageOrder(shuffleArray([...images]));
+        } else {
+          setSessionImageOrder([...images]);
+        }
         setTimeRemaining(duration);
         setCurrentImageIndex(0);
         setDisplayState('image');
@@ -142,16 +162,17 @@ export default function LineFlowPage() {
     setDisplayState('image');
     setTimeRemaining(duration);
     setCurrentImageIndex(0);
+    setSessionImageOrder([]);
   };
 
   const handlePreviousImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
+    setCurrentImageIndex((prevIndex) => (prevIndex - 1 + sessionImageOrder.length) % sessionImageOrder.length);
     setTimeRemaining(duration);
     setDisplayState('image');
   };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % sessionImageOrder.length);
     setTimeRemaining(duration);
     setDisplayState('image');
   };
@@ -170,7 +191,22 @@ export default function LineFlowPage() {
     if (imageToRemove?.startsWith('blob:')) {
       URL.revokeObjectURL(imageToRemove);
     }
-    setImages(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
+    const updatedImages = images.filter((_, index) => index !== indexToRemove);
+    setImages(updatedImages);
+    
+    // If a session is active, update its image order too
+    if (sessionState !== 'idle') {
+        const updatedSessionOrder = sessionImageOrder.filter(img => img !== imageToRemove);
+        if (updatedSessionOrder.length === 0) {
+            handleReset();
+        } else {
+            // Adjust current index if necessary
+            if (currentImageIndex >= updatedSessionOrder.length) {
+                setCurrentImageIndex(0);
+            }
+            setSessionImageOrder(updatedSessionOrder);
+        }
+    }
   };
   
   const clearImages = () => {
@@ -193,6 +229,8 @@ export default function LineFlowPage() {
     if (timeRemaining <= 5) return 'bg-yellow-500';
     return 'bg-primary';
   };
+  
+  const currentImageSrc = sessionImageOrder[currentImageIndex];
 
   return (
     <div className="flex h-dvh bg-background text-foreground font-body">
@@ -242,6 +280,13 @@ export default function LineFlowPage() {
                     </Button>
                   }
                 </div>
+                 <div className="flex items-center justify-between pt-2">
+                  <Label htmlFor="shuffle" className="flex items-center gap-2">
+                    <Shuffle className="size-4" />
+                    Shuffle
+                  </Label>
+                  <Switch id="shuffle" checked={shuffle} onCheckedChange={setShuffle} />
+                </div>
                 
                 {images.length > 0 && (
                   <ScrollArea className="h-40 w-full rounded-md border p-2">
@@ -282,7 +327,7 @@ export default function LineFlowPage() {
               </div>
               
               {/* Navigation Buttons */}
-              {images.length > 1 && displayState === 'image' && (
+              {sessionImageOrder.length > 1 && displayState === 'image' && (
                 <>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -318,14 +363,14 @@ export default function LineFlowPage() {
                 </>
               )}
 
-              {images.length > 0 && displayState === 'image' && (
+              {currentImageSrc && displayState === 'image' && (
                   <div className="relative w-full h-full animate-in fade-in zoom-in-95 duration-500">
                       <Image
-                          src={images[currentImageIndex]}
-                          alt={`Reference image ${currentImageIndex + 1}`}
+                          src={currentImageSrc}
+                          alt={`Reference image`}
                           fill
                           className="object-contain"
-                          key={`${currentImageIndex}-${images[currentImageIndex]}`}
+                          key={currentImageSrc}
                           priority
                       />
                   </div>
@@ -356,3 +401,5 @@ export default function LineFlowPage() {
     </div>
   );
 }
+
+    
