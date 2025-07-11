@@ -180,9 +180,14 @@ export default function LineFlowPage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const imageUrls = Array.from(files).map(file => URL.createObjectURL(file));
+      const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+      const imageUrls = imageFiles.map(file => URL.createObjectURL(file));
       setImages(prev => [...prev, ...imageUrls]);
-      toast({ title: `${files.length} image(s) loaded successfully.` });
+      toast({ title: `${imageUrls.length} image(s) loaded successfully.` });
+    }
+     // Reset the input value to allow selecting the same folder again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -271,9 +276,9 @@ export default function LineFlowPage() {
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Button onClick={() => fileInputRef.current?.click()} className="w-full">
-                    <FolderOpen className="mr-2" /> Load from Device
+                    <FolderOpen className="mr-2" /> Load Folder
                   </Button>
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" />
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" {...({ webkitdirectory: "true", directory: "true" } as any)} />
                   {images.length > 0 && 
                     <Button onClick={clearImages} variant="destructive" size="icon">
                       <Trash2 />
@@ -401,5 +406,3 @@ export default function LineFlowPage() {
     </div>
   );
 }
-
-    
