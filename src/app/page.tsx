@@ -3,16 +3,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { pinterestImageFetch } from '@/ai/flows/pinterest-image-fetch';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Loader2, Pause, Play, Trash2, X, Timer, Wand2 } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -24,8 +22,6 @@ export default function LineFlowPage() {
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(duration);
-  const [pinterestQuery, setPinterestQuery] = useState('');
-  const [isFetching, setIsFetching] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -115,24 +111,6 @@ export default function LineFlowPage() {
     handleReset();
   };
 
-  const handleFetchImage = async () => {
-    setIsFetching(true);
-    try {
-      const result = await pinterestImageFetch({ subject: pinterestQuery || "placeholder" });
-      if (result.imageUrl) {
-        setImages(prev => [...prev, result.imageUrl]);
-        toast({ title: 'Placeholder image added!' });
-      } else {
-        toast({ title: 'Could not generate an image', description: 'Please try again.', variant: 'destructive' });
-      }
-    } catch (error) {
-      console.error(error);
-      toast({ title: 'An error occurred', description: 'Failed to fetch placeholder image.', variant: 'destructive' });
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
   return (
     <div className="flex h-dvh bg-background text-foreground font-body">
       <aside className="w-[380px] flex-shrink-0 border-r bg-card flex flex-col">
@@ -184,18 +162,6 @@ export default function LineFlowPage() {
                     </div>
                   </ScrollArea>
                 )}
-
-                 <Separator />
-                
-                <div>
-                  <Label htmlFor="pinterest-query" className="flex items-center gap-2 mb-2"><Wand2 className="size-4"/>Generate Placeholder</Label>
-                  <div className="flex gap-2">
-                    <Button onClick={handleFetchImage} disabled={isFetching} className="w-full">
-                      {isFetching ? <Loader2 className="animate-spin" /> : 'Generate'}
-                    </Button>
-                  </div>
-                </div>
-
               </CardContent>
             </Card>
           </div>
