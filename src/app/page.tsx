@@ -10,10 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
 
 type SessionState = 'idle' | 'running' | 'paused';
 type DisplayState = 'image' | 'interval';
@@ -22,6 +23,7 @@ export default function LineFlowPage() {
   const [images, setImages] = useState<string[]>([]);
   const [duration, setDuration] = useState(30);
   const [intervalDuration, setIntervalDuration] = useState(5);
+  const [audibleAlerts, setAudibleAlerts] = useState(false);
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [displayState, setDisplayState] = useState<DisplayState>('image');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -29,7 +31,33 @@ export default function LineFlowPage() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const { toast } = useToast();
+
+  const playBeep = useCallback(() => {
+    if (!audibleAlerts) return;
+    if (!audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (e) {
+        console.error("Web Audio API is not supported in this browser");
+        return;
+      }
+    }
+    const oscillator = audioContextRef.current.createOscillator();
+    const gainNode = audioContextRef.current.createGain();
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(440, audioContextRef.current.currentTime);
+    gainNode.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContextRef.current.currentTime + 0.5);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContextRef.current.destination);
+    
+    oscillator.start(audioContextRef.current.currentTime);
+    oscillator.stop(audioContextRef.current.currentTime + 0.1);
+  }, [audibleAlerts]);
 
   const nextImage = useCallback(() => {
     if (images.length === 0) return;
@@ -42,7 +70,13 @@ export default function LineFlowPage() {
     if (sessionState === 'running' && images.length > 0) {
       timerRef.current = setInterval(() => {
         setTimeRemaining((prev) => {
-          if (prev <= 1) {
+          const newTime = prev - 1;
+
+          if (displayState === 'image' && audibleAlerts && (newTime === 3 || newTime === 2 || newTime === 1)) {
+            playBeep();
+          }
+
+          if (newTime <= 0) {
             // Timer finished
             if (displayState === 'image') {
               if (intervalDuration > 0) {
@@ -60,7 +94,7 @@ export default function LineFlowPage() {
               return duration; // This value will be used for the next tick, but immediately replaced
             }
           }
-          return prev - 1;
+          return newTime;
         });
       }, 1000);
     } else {
@@ -69,7 +103,7 @@ export default function LineFlowPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [sessionState, images.length, duration, nextImage, displayState, intervalDuration]);
+  }, [sessionState, images.length, duration, nextImage, displayState, intervalDuration, audibleAlerts, playBeep]);
   
 
   useEffect(() => {
@@ -80,6 +114,9 @@ export default function LineFlowPage() {
           URL.revokeObjectURL(image);
         }
       });
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, [images]);
 
@@ -150,6 +187,13 @@ export default function LineFlowPage() {
     ? (timeRemaining / duration) * 100 
     : (timeRemaining / intervalDuration) * 100;
 
+  const getProgressColor = () => {
+    if (displayState !== 'image') return 'bg-primary';
+    if (timeRemaining <= 2) return 'bg-red-500';
+    if (timeRemaining <= 5) return 'bg-yellow-500';
+    return 'bg-primary';
+  };
+
   return (
     <div className="flex h-dvh bg-background text-foreground font-body">
       <aside className="w-[380px] flex-shrink-0 border-r bg-card flex flex-col">
@@ -171,6 +215,13 @@ export default function LineFlowPage() {
                 <div className="space-y-2">
                   <Label htmlFor="interval">Interval Duration: {intervalDuration}s</Label>
                   <Slider id="interval" value={[intervalDuration]} onValueChange={(val) => setIntervalDuration(val[0])} min={0} max={30} step={1} />
+                </div>
+                 <div className="flex items-center justify-between pt-2">
+                  <Label htmlFor="audible-alerts" className="flex items-center gap-2">
+                    <Bell className="size-4" />
+                    Audible Alerts
+                  </Label>
+                  <Switch id="audible-alerts" checked={audibleAlerts} onCheckedChange={setAudibleAlerts} />
                 </div>
               </CardContent>
             </Card>
@@ -226,7 +277,7 @@ export default function LineFlowPage() {
           {(sessionState === 'running' || sessionState === 'paused') ? (
             <div className="w-full h-full flex items-center justify-center">
               <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md">
-                  <Progress value={progressValue} className="h-2 transition-all" />
+                  <Progress value={progressValue} className="h-2 transition-all" indicatorClassName={getProgressColor()} />
                   <div className="text-center text-xl font-mono font-semibold text-primary mt-2">{timeRemaining}s</div>
               </div>
               
