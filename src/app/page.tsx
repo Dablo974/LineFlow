@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -104,6 +104,18 @@ export default function LineFlowPage() {
     setDisplayState('image');
     setTimeRemaining(duration);
     setCurrentImageIndex(0);
+  };
+
+  const handlePreviousImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
+    setTimeRemaining(duration);
+    setDisplayState('image');
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+    setTimeRemaining(duration);
+    setDisplayState('image');
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,6 +227,29 @@ export default function LineFlowPage() {
                 <Progress value={progressValue} className="h-2 transition-all" />
                 <div className="text-center text-xl font-mono font-semibold text-primary mt-2">{timeRemaining}s</div>
             </div>
+            
+            {/* Navigation Buttons */}
+            {images.length > 1 && displayState === 'image' && (
+              <>
+                <Button 
+                  onClick={handlePreviousImage} 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
+                >
+                  <ChevronLeft className="size-6" />
+                </Button>
+                <Button 
+                  onClick={handleNextImage} 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
+                >
+                  <ChevronRight className="size-6" />
+                </Button>
+              </>
+            )}
+
             {images.length > 0 && displayState === 'image' && (
                 <div className="relative w-full h-full animate-in fade-in zoom-in-95 duration-500">
                     <Image
@@ -252,5 +287,3 @@ export default function LineFlowPage() {
     </div>
   );
 }
-
-    
