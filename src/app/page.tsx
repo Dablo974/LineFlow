@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -8,18 +9,20 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Pause, Play, Trash2, X, Timer } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type SessionState = 'idle' | 'running' | 'paused';
+type DisplayState = 'image' | 'interval';
 
 export default function LineFlowPage() {
   const [images, setImages] = useState<string[]>([]);
   const [duration, setDuration] = useState(30);
+  const [intervalDuration, setIntervalDuration] = useState(5);
   const [sessionState, setSessionState] = useState<SessionState>('idle');
+  const [displayState, setDisplayState] = useState<DisplayState>('image');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(duration);
 
@@ -30,15 +33,31 @@ export default function LineFlowPage() {
   const nextImage = useCallback(() => {
     if (images.length === 0) return;
     setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
-  }, [images.length]);
+    setDisplayState('image');
+    setTimeRemaining(duration);
+  }, [images.length, duration]);
 
   useEffect(() => {
     if (sessionState === 'running' && images.length > 0) {
       timerRef.current = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
-            nextImage();
-            return duration;
+            // Timer finished
+            if (displayState === 'image') {
+              if (intervalDuration > 0) {
+                // Start interval
+                setDisplayState('interval');
+                return intervalDuration;
+              } else {
+                // No interval, go to next image
+                nextImage();
+                return duration; // This value will be used for the next tick, but immediately replaced
+              }
+            } else { // displayState === 'interval'
+              // Interval finished, go to next image
+              nextImage();
+              return duration; // This value will be used for the next tick, but immediately replaced
+            }
           }
           return prev - 1;
         });
@@ -49,7 +68,8 @@ export default function LineFlowPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [sessionState, images.length, duration, nextImage]);
+  }, [sessionState, images.length, duration, nextImage, displayState, intervalDuration]);
+  
 
   useEffect(() => {
     // Revoke object URLs on component unmount to prevent memory leaks
@@ -74,12 +94,14 @@ export default function LineFlowPage() {
       if (sessionState === 'idle') {
         setTimeRemaining(duration);
         setCurrentImageIndex(0);
+        setDisplayState('image');
       }
     }
   };
 
   const handleReset = () => {
     setSessionState('idle');
+    setDisplayState('image');
     setTimeRemaining(duration);
     setCurrentImageIndex(0);
   };
@@ -110,6 +132,10 @@ export default function LineFlowPage() {
     setImages([]);
     handleReset();
   };
+  
+  const progressValue = displayState === 'image' 
+    ? (timeRemaining / duration) * 100 
+    : (timeRemaining / intervalDuration) * 100;
 
   return (
     <div className="flex h-dvh bg-background text-foreground font-body">
@@ -129,12 +155,16 @@ export default function LineFlowPage() {
                   <Label htmlFor="duration">Image Duration: {duration}s</Label>
                   <Slider id="duration" value={[duration]} onValueChange={(val) => setDuration(val[0])} min={5} max={120} step={5} />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="interval">Interval Duration: {intervalDuration}s</Label>
+                  <Slider id="interval" value={[intervalDuration]} onValueChange={(val) => setIntervalDuration(val[0])} min={0} max={30} step={1} />
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5" /> Image Sets</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5" /> Image Set</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
@@ -155,7 +185,7 @@ export default function LineFlowPage() {
                       {images.map((imgSrc, index) => (
                         <div key={`${imgSrc}-${index}`} className="flex items-center gap-2 p-1 rounded-md animate-in fade-in">
                           <Image src={imgSrc} alt={`Reference ${index + 1}`} width={40} height={40} className="rounded object-cover aspect-square" />
-                          <span className="text-sm truncate flex-1">{imgSrc.startsWith('blob:') ? `Image ${index + 1}` : 'Generated Image'}</span>
+                          <span className="text-sm truncate flex-1">{`Image ${index + 1}`}</span>
                           <Button variant="ghost" size="icon" className="size-7" onClick={() => removeImage(index)}><X className="size-4" /></Button>
                         </div>
                       ))}
@@ -179,13 +209,13 @@ export default function LineFlowPage() {
       </aside>
 
       <main className="flex-1 flex flex-col items-center justify-center p-8 relative transition-all duration-300">
-        {sessionState === 'running' || sessionState === 'paused' ? (
+        {(sessionState === 'running' || sessionState === 'paused') ? (
           <div className="w-full h-full flex items-center justify-center">
              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md">
-                <Progress value={(timeRemaining / duration) * 100} className="h-2 transition-all" />
+                <Progress value={progressValue} className="h-2 transition-all" />
                 <div className="text-center text-xl font-mono font-semibold text-primary mt-2">{timeRemaining}s</div>
             </div>
-            {images.length > 0 && (
+            {images.length > 0 && displayState === 'image' && (
                 <div className="relative w-full h-full animate-in fade-in zoom-in-95 duration-500">
                     <Image
                         src={images[currentImageIndex]}
@@ -196,6 +226,13 @@ export default function LineFlowPage() {
                         priority
                     />
                 </div>
+            )}
+            {displayState === 'interval' && sessionState === 'running' && (
+              <div className="text-center text-muted-foreground max-w-sm animate-in fade-in">
+                  <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
+                  <h2 className="text-3xl font-bold text-foreground font-headline">Interval</h2>
+                  <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
+              </div>
             )}
              {sessionState === 'paused' && (
                 <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 animate-in fade-in">
@@ -208,10 +245,12 @@ export default function LineFlowPage() {
           <div className="text-center text-muted-foreground max-w-sm">
             <Images className="mx-auto h-16 w-16 mb-4 text-primary" />
             <h2 className="text-3xl font-bold text-foreground font-headline">Welcome to LineFlow</h2>
-            <p className="mt-2 leading-relaxed">Your personal space for gesture drawing practice. Load some images from your device or fetch ideas from Pinterest to get started.</p>
+            <p className="mt-2 leading-relaxed">Your personal space for gesture drawing practice. Load some images from your device to get started.</p>
           </div>
         )}
       </main>
     </div>
   );
 }
+
+    
