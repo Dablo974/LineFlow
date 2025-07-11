@@ -13,6 +13,7 @@ import { Slider } from '@/components/ui/slider';
 import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type SessionState = 'idle' | 'running' | 'paused';
 type DisplayState = 'image' | 'interval';
@@ -221,68 +222,85 @@ export default function LineFlowPage() {
       </aside>
 
       <main className="flex-1 flex flex-col items-center justify-center p-8 relative transition-all duration-300">
-        {(sessionState === 'running' || sessionState === 'paused') ? (
-          <div className="w-full h-full flex items-center justify-center">
-             <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md">
-                <Progress value={progressValue} className="h-2 transition-all" />
-                <div className="text-center text-xl font-mono font-semibold text-primary mt-2">{timeRemaining}s</div>
-            </div>
-            
-            {/* Navigation Buttons */}
-            {images.length > 1 && displayState === 'image' && (
-              <>
-                <Button 
-                  onClick={handlePreviousImage} 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
-                >
-                  <ChevronLeft className="size-6" />
-                </Button>
-                <Button 
-                  onClick={handleNextImage} 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
-                >
-                  <ChevronRight className="size-6" />
-                </Button>
-              </>
-            )}
-
-            {images.length > 0 && displayState === 'image' && (
-                <div className="relative w-full h-full animate-in fade-in zoom-in-95 duration-500">
-                    <Image
-                        src={images[currentImageIndex]}
-                        alt={`Reference image ${currentImageIndex + 1}`}
-                        fill
-                        className="object-contain"
-                        key={`${currentImageIndex}-${images[currentImageIndex]}`}
-                        priority
-                    />
-                </div>
-            )}
-            {displayState === 'interval' && sessionState === 'running' && (
-              <div className="text-center text-muted-foreground max-w-sm animate-in fade-in">
-                  <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
-                  <h2 className="text-3xl font-bold text-foreground font-headline">Interval</h2>
-                  <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
+        <TooltipProvider>
+          {(sessionState === 'running' || sessionState === 'paused') ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md">
+                  <Progress value={progressValue} className="h-2 transition-all" />
+                  <div className="text-center text-xl font-mono font-semibold text-primary mt-2">{timeRemaining}s</div>
               </div>
-            )}
-             {sessionState === 'paused' && (
-                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 animate-in fade-in">
-                    <Pause className="size-16 text-primary" />
-                    <p className="text-2xl font-semibold text-foreground">Paused</p>
+              
+              {/* Navigation Buttons */}
+              {images.length > 1 && displayState === 'image' && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={handlePreviousImage} 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-red-500/80 hover:text-white"
+                      >
+                        <ChevronLeft className="size-6" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Previous Image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={handleNextImage} 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-green-500/80 hover:text-white"
+                      >
+                        <ChevronRight className="size-6" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <p>Next Image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+
+              {images.length > 0 && displayState === 'image' && (
+                  <div className="relative w-full h-full animate-in fade-in zoom-in-95 duration-500">
+                      <Image
+                          src={images[currentImageIndex]}
+                          alt={`Reference image ${currentImageIndex + 1}`}
+                          fill
+                          className="object-contain"
+                          key={`${currentImageIndex}-${images[currentImageIndex]}`}
+                          priority
+                      />
+                  </div>
+              )}
+              {displayState === 'interval' && sessionState === 'running' && (
+                <div className="text-center text-muted-foreground max-w-sm animate-in fade-in">
+                    <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
+                    <h2 className="text-3xl font-bold text-foreground font-headline">Interval</h2>
+                    <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
                 </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center text-muted-foreground max-w-sm">
-            <Images className="mx-auto h-16 w-16 mb-4 text-primary" />
-            <h2 className="text-3xl font-bold text-foreground font-headline">Welcome to LineFlow</h2>
-            <p className="mt-2 leading-relaxed">Your personal space for gesture drawing practice. Load some images from your device to get started.</p>
-          </div>
-        )}
+              )}
+              {sessionState === 'paused' && (
+                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 animate-in fade-in">
+                      <Pause className="size-16 text-primary" />
+                      <p className="text-2xl font-semibold text-foreground">Paused</p>
+                  </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground max-w-sm">
+              <Images className="mx-auto h-16 w-16 mb-4 text-primary" />
+              <h2 className="text-3xl font-bold text-foreground font-headline">Welcome to LineFlow</h2>
+              <p className="mt-2 leading-relaxed">Your personal space for gesture drawing practice. Load some images from your device to get started.</p>
+            </div>
+          )}
+        </TooltipProvider>
       </main>
     </div>
   );
