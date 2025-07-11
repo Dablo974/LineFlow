@@ -17,7 +17,7 @@ const PinterestImageFetchInputSchema = z.object({
 export type PinterestImageFetchInput = z.infer<typeof PinterestImageFetchInputSchema>;
 
 const PinterestImageFetchOutputSchema = z.object({
-  imageUrl: z.string().describe('The URL of the fetched image from Pinterest.'),
+  imageUrl: z.string().describe('The direct URL of the fetched image from Pinterest, ending in .jpg, .png, or .gif.'),
 });
 export type PinterestImageFetchOutput = z.infer<typeof PinterestImageFetchOutputSchema>;
 
@@ -29,9 +29,13 @@ const pinterestImageFetchPrompt = ai.definePrompt({
   name: 'pinterestImageFetchPrompt',
   input: {schema: PinterestImageFetchInputSchema},
   output: {schema: PinterestImageFetchOutputSchema},
-  prompt: `You are an AI assistant specialized in finding relevant reference images from Pinterest.
+  prompt: `You are an AI assistant specialized in finding relevant reference images for artists from Pinterest.
 
-  Based on the user's subject, search Pinterest and find a suitable image URL.
+  Your task is to find a high-quality, direct image URL from Pinterest based on the user's subject.
+  The URL must point directly to an image file (e.g., end in .jpg, .png, .gif).
+
+  Example of a good URL: https://i.pinimg.com/564x/1a/2b/3c/1a2b3c4d5e6f7g8h9i0j.jpg
+  Example of a bad URL: https://www.pinterest.com/pin/1234567890/
 
   Subject: {{{subject}}}
 
