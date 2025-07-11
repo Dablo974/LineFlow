@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle, FileImage } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -45,6 +45,7 @@ export default function LineFlowPage() {
   const [sessionImageOrder, setSessionImageOrder] = useState<string[]>([]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const { toast } = useToast();
@@ -185,9 +186,9 @@ export default function LineFlowPage() {
       setImages(prev => [...prev, ...imageUrls]);
       toast({ title: `${imageUrls.length} image(s) loaded successfully.` });
     }
-     // Reset the input value to allow selecting the same folder again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+     // Reset the input value to allow selecting the same folder/files again
+    if (event.target) {
+      event.target.value = "";
     }
   };
 
@@ -274,17 +275,23 @@ export default function LineFlowPage() {
                 <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5" /> Image Set</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Button onClick={() => fileInputRef.current?.click()} className="w-full">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button onClick={() => fileInputRef.current?.click()}>
+                    <FileImage className="mr-2" /> Load Files
+                  </Button>
+                  <Button onClick={() => folderInputRef.current?.click()}>
                     <FolderOpen className="mr-2" /> Load Folder
                   </Button>
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" {...({ webkitdirectory: "true", directory: "true" } as any)} />
-                  {images.length > 0 && 
-                    <Button onClick={clearImages} variant="destructive" size="icon">
-                      <Trash2 />
+                  <input type="file" ref={folderInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" {...({ webkitdirectory: "true", directory: "true" } as any)} />
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" />
+                </div>
+                
+                {images.length > 0 && 
+                    <Button onClick={clearImages} variant="destructive" size="sm" className="w-full">
+                      <Trash2 className="mr-2" /> Clear All Images
                     </Button>
                   }
-                </div>
+                
                  <div className="flex items-center justify-between pt-2">
                   <Label htmlFor="shuffle" className="flex items-center gap-2">
                     <Shuffle className="size-4" />
