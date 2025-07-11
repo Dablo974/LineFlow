@@ -229,11 +229,26 @@ export default function LineFlowPage() {
     ? (timeRemaining / duration) * 100 
     : (timeRemaining / intervalDuration) * 100;
 
-  const getProgressColor = () => {
-    if (displayState !== 'image') return 'bg-primary';
-    if (timeRemaining <= 2) return 'bg-red-500';
-    if (timeRemaining <= 5) return 'bg-yellow-500';
-    return 'bg-primary';
+  const getProgressStyle = () => {
+    if (displayState !== 'image') {
+      return { background: 'hsl(var(--primary))' };
+    }
+    // HSL(hue, saturation, lightness)
+    // Primary color hue: 215
+    // Red hue: 0
+    const primaryHue = 215;
+    const endHue = 0;
+    const percentage = timeRemaining / duration;
+    
+    // Lerp from primary hue to red hue. 
+    // We add 360 to endHue if it's smaller to wrap around correctly, but here 0 is fine.
+    const hue = endHue + (primaryHue - endHue) * percentage;
+    const colorStart = `hsl(${hue}, 80%, 60%)`;
+    const colorEnd = `hsl(${hue}, 80%, 40%)`;
+
+    return {
+      background: `linear-gradient(to right, ${colorStart}, ${colorEnd})`,
+    };
   };
   
   const currentImageSrc = sessionImageOrder[currentImageIndex];
@@ -335,7 +350,7 @@ export default function LineFlowPage() {
             <div className="w-full h-full flex flex-col items-center justify-center">
               <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md flex items-center gap-4 z-20">
                   <div className="text-xl font-mono font-semibold text-primary w-16 text-right">{timeRemaining}s</div>
-                  <Progress value={progressValue} className="h-2 transition-all flex-1" indicatorClassName={getProgressColor()} />
+                  <Progress value={progressValue} className="h-2 transition-all flex-1" indicatorStyle={getProgressStyle()} />
               </div>
               
               <div className="relative w-full h-full pt-16">
