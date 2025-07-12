@@ -70,6 +70,8 @@ export default function LineFlowPracticePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const { toast } = useToast();
+  
+  const [sessionImageCount, setSessionImageCount] = useState(images.length);
 
   useEffect(() => {
     const modeParam = searchParams.get('mode') as PracticeMode | null;
@@ -80,12 +82,11 @@ export default function LineFlowPracticePage() {
     }
   }, [searchParams, router]);
 
-  const calculateDurations = useCallback(() => {
-    if (mode === 'normal' || images.length === 0) {
+  const calculateDurations = useCallback((numImages: number) => {
+    if (mode === 'normal' || numImages === 0) {
       return [];
     }
 
-    const numImages = images.length;
     const averageDuration = Math.floor(totalSessionDuration / numImages);
 
     if (averageDuration < MIN_IMAGE_DURATION) {
@@ -120,12 +121,18 @@ export default function LineFlowPracticePage() {
         return durations.reverse();
     }
     return durations;
-  }, [mode, images, totalSessionDuration]);
+  }, [mode, totalSessionDuration]);
 
   useEffect(() => {
-    if (mode !== 'normal') {
-      const calculated = calculateDurations();
+    if (mode !== 'normal' && images.length > 0) {
+      const maxImages = Math.floor(totalSessionDuration / MIN_IMAGE_DURATION);
+      const numToUse = Math.min(images.length, maxImages);
+      setSessionImageCount(numToUse);
+      const calculated = calculateDurations(numToUse);
       setSessionDurations(calculated);
+    } else {
+      setSessionImageCount(images.length);
+      setSessionDurations([]);
     }
   }, [mode, images.length, totalSessionDuration, calculateDurations]);
 
@@ -217,10 +224,21 @@ export default function LineFlowPracticePage() {
   }, [images]);
   
   const startSession = () => {
-      const imageOrder = shuffleImages ? shuffleArray([...images]) : [...images];
+      let imagePool = [...images];
+      if (shuffleImages) {
+        imagePool = shuffleArray(imagePool);
+      }
+
+      let imageOrder = imagePool;
+      if(mode !== 'normal') {
+        const maxImages = Math.floor(totalSessionDuration / MIN_IMAGE_DURATION);
+        const numToUse = Math.min(images.length, maxImages);
+        imageOrder = imagePool.slice(0, numToUse);
+      }
+      
       setSessionImageOrder(imageOrder);
       
-      const firstDuration = mode === 'normal' ? initialDuration : (calculateDurations()[0] || MIN_IMAGE_DURATION);
+      const firstDuration = mode === 'normal' ? initialDuration : (sessionDurations[0] || MIN_IMAGE_DURATION);
       
       setCurrentImageIndex(0);
       setCurrentDuration(firstDuration);
@@ -385,7 +403,7 @@ export default function LineFlowPracticePage() {
                             <CardContent className="p-3 text-sm text-muted-foreground space-y-2">
                                 <div className="flex justify-between items-center">
                                     <span className="font-medium flex items-center gap-1.5"><Images className="size-4" /> Images</span>
-                                    <span>{images.length}</span>
+                                    <span>{sessionImageCount} of {images.length} used</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-medium flex items-center gap-1.5"><Hourglass className="size-4" /> Time Per Image</span>
@@ -565,5 +583,3 @@ export default function LineFlowPracticePage() {
     </div>
   );
 }
-
-    
