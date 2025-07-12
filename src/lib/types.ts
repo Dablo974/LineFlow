@@ -7,3 +7,11 @@ export type SessionRecord = {
   imagesCompleted: number;
   imageSet: 'custom' | 'ai';
 };
+
+export interface GenerateShapeInput {
+  description: string;
+}
+
+export interface GenerateShapeOutput {
+  imageDataUri: string;
+}

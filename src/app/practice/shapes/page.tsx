@@ -17,18 +17,22 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Switch } from '@/components/ui/switch';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { SessionSummaryDialog } from '@/components/session-summary-dialog';
-import type { SessionRecord } from '@/lib/types';
+import type { SessionRecord, GenerateShapeInput } from '@/lib/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import Link from 'next/link';
-import { generateShape, GenerateShapeInputSchema } from '@/ai/flows/generate-shape-flow';
+import { generateShape } from '@/ai/flows/generate-shape-flow';
 import { Input } from '@/components/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 type SessionState = 'idle' | 'generating' | 'running' | 'paused' | 'finished';
 type DisplayState = 'image' | 'interval';
+
+const GenerateShapeInputSchema = z.object({
+  description: z.string().min(3, "Please enter a more descriptive prompt.").describe('A text description of the geometric shape to generate. e.g., "a cube", "two intersecting spheres"'),
+});
 
 const getModeName = () => 'AI Shapes';
 
@@ -176,7 +180,7 @@ export default function AIShapesPracticePage() {
     };
   }, []);
   
-  const handleGenerateImages = async (values: z.infer<typeof GenerateShapeInputSchema>) => {
+  const handleGenerateImages = async (values: GenerateShapeInput) => {
     setSessionState('generating');
     setImages([]);
     
