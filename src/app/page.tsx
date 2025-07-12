@@ -88,10 +88,10 @@ export default function HomePage() {
                   <CardTitle>Practice With Your Images</CardTitle>
                   <CardDescription>Load your own images and practice with or without a timer.</CardDescription>
                 </CardHeader>
-               <CardContent className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+               <CardContent className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-0 group-hover/timed:opacity-100 transition-opacity duration-300">
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:col-span-2">
                     {modes.map((mode) => (
-                      <Card key={mode.name} className="flex flex-col hover:shadow-lg transition-all duration-300 bg-background/50">
+                      <Card key={mode.name} className="flex flex-col hover:shadow-lg transition-all duration-300 bg-background/50 group">
                         <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
                           <div className="p-3 bg-primary/10 rounded-full">
                               {mode.icon}
@@ -101,7 +101,7 @@ export default function HomePage() {
                           </div>
                         </CardHeader>
                         <CardContent className="flex-1 flex flex-col justify-between">
-                          <CardDescription>{mode.description}</CardDescription>
+                          <CardDescription className="max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 transition-all duration-300 ease-in-out">{mode.description}</CardDescription>
                           <Button asChild className="mt-6 w-full group">
                             <Link href={mode.href}>
                               Select Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
@@ -112,7 +112,7 @@ export default function HomePage() {
                     ))}
                   </div>
 
-                   <Card className="flex flex-col hover:shadow-xl transition-all duration-300 bg-background/50 md:col-span-2 lg:col-span-1">
+                   <Card className="flex flex-col hover:shadow-xl transition-all duration-300 bg-background/50 group md:col-span-2 lg:col-span-1">
                       <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
                           <div className="p-3 bg-primary/10 rounded-full">
                               <Wind className="size-8 text-primary" />
@@ -122,7 +122,7 @@ export default function HomePage() {
                           </div>
                       </CardHeader>
                       <CardContent className="flex-1 flex flex-col justify-between">
-                          <CardDescription>A timer-free session with your own images. Perfect for relaxed sketching.</CardDescription>
+                          <CardDescription className="max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 transition-all duration-300 ease-in-out">A timer-free session with your own images. Perfect for relaxed sketching.</CardDescription>
                           <Button asChild className="mt-6 w-full group">
                               <Link href="/practice/zen">
                               Enter Zen Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
@@ -135,7 +135,7 @@ export default function HomePage() {
 
             <div className="grid gap-6">
               {aiModes.map((mode) => (
-                <Card key={mode.name} className={`flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm ${mode.accent ? 'border-accent/20' : ''}`}>
+                <Card key={mode.name} className={`group flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm ${mode.accent ? 'border-accent/20' : ''}`}>
                   <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
                     <div className={`p-3 rounded-full ${mode.accent ? 'bg-accent/10' : 'bg-primary/10'}`}>
                         {mode.icon}
@@ -145,7 +145,7 @@ export default function HomePage() {
                     </div>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col justify-between">
-                    <CardDescription className={mode.accent ? 'text-accent-foreground/80' : ''}>{mode.description}</CardDescription>
+                    <CardDescription className={`max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 transition-all duration-300 ease-in-out ${mode.accent ? 'text-accent-foreground/80' : ''}`}>{mode.description}</CardDescription>
                     <Button asChild className={`mt-6 w-full group ${mode.accent ? 'bg-accent text-accent-foreground hover:bg-accent/90' : ''}`}>
                       <Link href={mode.href}>
                         {mode.cta} <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
