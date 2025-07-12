@@ -19,7 +19,7 @@ export async function generateShape(input: GenerateShapeInput): Promise<Generate
     
     The lighting should be clear and create well-defined shadows to help the artist understand its form. Avoid any distracting elements, textures, or colors. The final image should be simple and focused entirely on the shape itself.`,
     config: {
-      responseModalities: ['IMAGE'],
+      responseModalities: ['TEXT', 'IMAGE'],
     },
   });
 
