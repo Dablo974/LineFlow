@@ -31,7 +31,7 @@ const modes = [
 export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh bg-background text-foreground p-4">
-      <header className="mb-8 text-center">
+      <header className="mb-12 text-center">
         <div className="inline-block">
          <LineFlowLogo className="text-3xl" />
         </div>
@@ -39,12 +39,12 @@ export default function HomePage() {
       </header>
       
       <main className="w-full max-w-4xl">
-        <h2 className="text-2xl font-bold text-center mb-6">Choose Your Practice Mode</h2>
+        <h2 className="text-2xl font-bold text-center mb-8">Choose Your Practice Mode</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {modes.map((mode) => (
-            <Card key={mode.name} className="flex flex-col hover:shadow-lg transition-shadow">
+            <Card key={mode.name} className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
-                <div className="p-2 bg-primary/10 rounded-full">
+                <div className="p-3 bg-primary/10 rounded-full">
                     {mode.icon}
                 </div>
                 <div className="flex-1">
@@ -53,9 +53,9 @@ export default function HomePage() {
               </CardHeader>
               <CardContent className="flex-1 flex flex-col justify-between">
                 <CardDescription>{mode.description}</CardDescription>
-                <Button asChild className="mt-6 w-full">
+                <Button asChild className="mt-6 w-full group">
                   <Link href={mode.href}>
-                    Select Mode <ArrowRight className="ml-2" />
+                    Select Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
               </CardContent>
@@ -64,11 +64,9 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="mt-12 text-center text-muted-foreground text-sm">
+      <footer className="mt-16 text-center text-muted-foreground text-sm">
         <p>Load your own images and start drawing!</p>
       </footer>
     </div>
   );
 }
-
-    

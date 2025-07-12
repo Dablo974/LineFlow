@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle, FileImage, Home, Info } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle, FileImage, Home, Info, LogOut } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -361,15 +361,20 @@ export default function LineFlowPracticePage() {
 
   const getProgressStyle = () => {
     if (displayState !== 'image') {
-      return { background: 'hsl(var(--primary))' };
+      return { background: 'hsl(var(--accent))' };
     }
-    const primaryHue = 215;
-    const endHue = 0;
+    const primaryHue = 220; // HSL hue for primary color
+    const endHue = 0; // HSL hue for red
     const percentage = timeRemaining / currentDuration;
     
     const hue = endHue + (primaryHue - endHue) * percentage;
-    const colorStart = `hsl(${hue}, 80%, 60%)`;
-    const colorEnd = `hsl(${hue}, 80%, 40%)`;
+    
+    // Animate saturation and lightness for more drama
+    const saturation = 70 + 30 * (1 - percentage); // from 70% to 100%
+    const lightness = 50 + 10 * (1-percentage); // from 50% to 60%
+
+    const colorStart = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    const colorEnd = `hsl(${hue}, ${saturation-20}%, ${lightness-20}%)`;
 
     return {
       background: `linear-gradient(to right, ${colorStart}, ${colorEnd})`,
@@ -392,19 +397,18 @@ export default function LineFlowPracticePage() {
       counts[d] = (counts[d] || 0) + 1;
     });
     
-    // Sort keys numerically
     const sortedDurations = Object.keys(counts).map(Number).sort((a,b) => a - b);
     
     return sortedDurations.map(duration => `${counts[duration]} x ${duration}s`).join(', ');
   }
 
   return (
-    <div className="flex h-dvh bg-background text-foreground font-body">
-      <aside className="w-[380px] flex-shrink-0 border-r bg-card flex flex-col">
+    <div className="flex h-dvh bg-muted/40 text-foreground font-body">
+      <aside className="w-[380px] flex-shrink-0 border-r bg-background flex flex-col">
         <header className="p-4 border-b flex items-center justify-between">
           <LineFlowLogo />
           <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-            <Home className="mr-2 size-4" /> Modes
+            <LogOut className="mr-2 size-4" /> Change Mode
           </Button>
         </header>
         
@@ -412,7 +416,7 @@ export default function LineFlowPracticePage() {
           <div className="p-4 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5" /> {getModeName(mode)} Mode Settings</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5 text-primary" /> {getModeName(mode)} Mode Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {mode === 'normal' ? (
@@ -429,12 +433,12 @@ export default function LineFlowPracticePage() {
                         <Card className="bg-muted/50">
                             <CardContent className="p-3 text-sm text-muted-foreground space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <span className="font-medium flex items-center gap-1.5"><Images className="size-4" /> Images</span>
+                                    <span className="font-medium flex items-center gap-1.5"><Images className="size-4" /> Images In Session</span>
                                     <span>{sessionImageCount} of {images.length} used</span>
                                 </div>
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center text-right">
                                     <span className="font-medium flex items-center gap-1.5"><Hourglass className="size-4" /> Time Per Image</span>
-                                    <span className="text-right">{formatDurations(sessionDurations)}</span>
+                                    <span className="max-w-[160px]">{formatDurations(sessionDurations)}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-medium flex items-center gap-1.5"><Info className="size-4" /> Minimum Time</span>
@@ -460,7 +464,7 @@ export default function LineFlowPracticePage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5" /> Image Set</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5 text-primary" /> Image Set</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-2">
@@ -483,7 +487,7 @@ export default function LineFlowPracticePage() {
                  <div className="flex items-center justify-between pt-2">
                   <Label htmlFor="shuffle" className="flex items-center gap-2">
                     <Shuffle className="size-4" />
-                    Shuffle
+                    Shuffle Images
                   </Label>
                   <Switch id="shuffle" checked={shuffleImages} onCheckedChange={setShuffleImages} />
                 </div>
@@ -506,13 +510,13 @@ export default function LineFlowPracticePage() {
           </div>
         </ScrollArea>
 
-        <footer className="p-4 border-t mt-auto">
+        <footer className="p-4 border-t mt-auto bg-background">
           <div className="flex items-center gap-2">
-            <Button onClick={handleSessionToggle} className="w-full" disabled={images.length === 0}>
+            <Button onClick={handleSessionToggle} className="w-full" size="lg" disabled={images.length === 0}>
               {sessionState === 'running' ? <Pause className="mr-2" /> : <Play className="mr-2" />}
-              {sessionState === 'running' ? 'Pause' : (sessionState === 'paused' ? 'Resume' : 'Start')}
+              {sessionState === 'running' ? 'Pause' : (sessionState === 'paused' ? 'Resume' : 'Start Session')}
             </Button>
-            <Button onClick={handleReset} variant="outline" disabled={sessionState === 'idle'}>Reset</Button>
+            <Button onClick={handleReset} variant="outline" size="lg" disabled={sessionState === 'idle'}>Reset</Button>
           </div>
         </footer>
       </aside>
@@ -522,10 +526,10 @@ export default function LineFlowPracticePage() {
           {(sessionState === 'running' || sessionState === 'paused') ? (
             <div className="w-full h-full flex flex-col items-center justify-center">
               <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md flex items-center gap-4 z-20">
-                  <div className="text-xl font-mono font-semibold text-primary w-36 text-right">
+                  <div className="text-xl font-mono font-semibold text-foreground w-40 text-right">
                     {timeRemaining}s / {currentDuration}s
                   </div>
-                  <Progress value={progressValue} className="h-2 transition-all flex-1" indicatorStyle={getProgressStyle()} />
+                  <Progress value={progressValue} className="h-2.5 transition-all flex-1" indicatorStyle={getProgressStyle()} />
               </div>
               
               <div className="relative w-full h-full pt-16">
@@ -580,7 +584,7 @@ export default function LineFlowPracticePage() {
                 {displayState === 'interval' && sessionState === 'running' && (
                   <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full">
                       <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
-                      <h2 className="text-3xl font-bold text-foreground font-headline">Interval</h2>
+                      <h2 className="text-3xl font-bold text-foreground">Interval</h2>
                       <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
                   </div>
                 )}
@@ -596,7 +600,7 @@ export default function LineFlowPracticePage() {
           ) : (
             <div className="text-center text-muted-foreground max-w-sm">
               <Images className="mx-auto h-16 w-16 mb-4 text-primary" />
-              <h2 className="text-3xl font-bold text-foreground font-headline">Ready for {getModeName(mode)} Mode</h2>
+              <h2 className="text-3xl font-bold text-foreground">Ready for {getModeName(mode)} Mode</h2>
               <p className="mt-2 leading-relaxed">Load some images from your device to get started on your gesture drawing practice.</p>
             </div>
           )}
