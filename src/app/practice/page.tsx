@@ -42,7 +42,7 @@ const getModeName = (mode: PracticeMode) => {
     }
 }
 
-const MIN_IMAGE_DURATION = 5; // seconds
+const MIN_IMAGE_DURATION = 30; // seconds
 
 export default function LineFlowPracticePage() {
   const searchParams = useSearchParams();
@@ -90,11 +90,12 @@ export default function LineFlowPracticePage() {
     const averageDuration = Math.floor(totalSessionDuration / numImages);
 
     if (averageDuration < MIN_IMAGE_DURATION) {
+      // This should not happen if sessionImageCount is calculated correctly
       return Array(numImages).fill(MIN_IMAGE_DURATION);
     }
     
     // Create an arithmetic progression
-    const step = Math.max(1, Math.floor( (averageDuration - MIN_IMAGE_DURATION) / (numImages -1) * 2));
+    const step = (numImages > 1) ? Math.max(1, Math.floor( (averageDuration - MIN_IMAGE_DURATION) / (numImages - 1) * 2)) : 0;
     
     let durations: number[] = [];
     let firstTerm = averageDuration - Math.floor(((numImages - 1) * step) / 2);
@@ -109,8 +110,8 @@ export default function LineFlowPracticePage() {
     // Adjust to match total duration
     const currentTotal = durations.reduce((a, b) => a + b, 0);
     const diff = totalSessionDuration - currentTotal;
-    const adjustment = Math.floor(diff / numImages);
-    const remainder = diff % numImages;
+    const adjustment = numImages > 0 ? Math.floor(diff / numImages) : 0;
+    const remainder = numImages > 0 ? diff % numImages : 0;
 
     durations = durations.map((d, i) => d + adjustment + (i < remainder ? 1 : 0));
     
@@ -124,17 +125,22 @@ export default function LineFlowPracticePage() {
   }, [mode, totalSessionDuration]);
 
   useEffect(() => {
-    if (mode !== 'normal' && images.length > 0) {
+    if (mode !== 'normal') {
       const maxImages = Math.floor(totalSessionDuration / MIN_IMAGE_DURATION);
       const numToUse = Math.min(images.length, maxImages);
       setSessionImageCount(numToUse);
-      const calculated = calculateDurations(numToUse);
-      setSessionDurations(calculated);
+
+      if (numToUse > 0) {
+        const calculated = calculateDurations(numToUse);
+        setSessionDurations(calculated);
+      } else {
+        setSessionDurations([]);
+      }
     } else {
       setSessionImageCount(images.length);
       setSessionDurations([]);
     }
-  }, [mode, images.length, totalSessionDuration, calculateDurations]);
+  }, [mode, images, totalSessionDuration, calculateDurations]);
 
 
   const playBeep = useCallback(() => {
@@ -583,3 +589,5 @@ export default function LineFlowPracticePage() {
     </div>
   );
 }
+
+    
