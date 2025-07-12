@@ -16,6 +16,8 @@ import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
+import { ThemeToggle } from '@/components/theme-toggle';
+
 
 type SessionState = 'idle' | 'running' | 'paused';
 type DisplayState = 'image' | 'interval';
@@ -407,9 +409,12 @@ export default function LineFlowPracticePage() {
       <aside className="w-[380px] flex-shrink-0 border-r bg-background flex flex-col">
         <header className="p-4 border-b flex items-center justify-between">
           <LineFlowLogo />
-          <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-            <LogOut className="mr-2 size-4" /> Change Mode
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
+              <LogOut className="mr-2 size-4" /> Change Mode
+            </Button>
+          </div>
         </header>
         
         <ScrollArea className="flex-1">
