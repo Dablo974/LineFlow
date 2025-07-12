@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Switch } from '@/components/ui/switch';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { SessionSummaryDialog } from '@/components/session-summary-dialog';
-import type { SessionRecord, GenerateShapeInput } from '@/lib/types';
+import type { SessionRecord } from '@/lib/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import Link from 'next/link';
 import { generateShape } from '@/ai/flows/generate-shape-flow';
@@ -29,6 +29,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 
 type SessionState = 'idle' | 'generating' | 'running' | 'paused' | 'finished';
 type DisplayState = 'image' | 'interval';
+type GenerateShapeInput = z.infer<typeof GenerateShapeInputSchema>;
+interface GenerateShapeOutput {
+  imageDataUri: string;
+}
+
 
 const GenerateShapeInputSchema = z.object({
   description: z.string().min(3, "Please enter a more descriptive prompt.").describe('A text description of the geometric shape to generate. e.g., "a cube", "two intersecting spheres"'),
@@ -52,6 +57,7 @@ export default function AIShapesPracticePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [lastSession, setLastSession] = useState<SessionRecord | null>(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -183,12 +189,16 @@ export default function AIShapesPracticePage() {
   const handleGenerateImages = async (values: GenerateShapeInput) => {
     setSessionState('generating');
     setImages([]);
+    setGenerationProgress(0);
     
     try {
-      const generationPromises = Array.from({ length: imageCount }, () => generateShape(values));
-      const results = await Promise.all(generationPromises);
-      const generatedImages = results.map(r => r.imageDataUri);
-      setImages(generatedImages);
+      const generatedImages = [];
+      for (let i = 0; i < imageCount; i++) {
+        const result = await generateShape(values);
+        generatedImages.push(result.imageDataUri);
+        setImages([...generatedImages]);
+        setGenerationProgress(((i + 1) / imageCount) * 100);
+      }
       setSessionState('idle');
       toast({ title: "Images generated!", description: "Press Start Session to begin." });
     } catch (error) {
@@ -303,6 +313,8 @@ export default function AIShapesPracticePage() {
     setCurrentImageIndex(0);
     setImages([]); // Clear generated images for a new session
   };
+  
+  const isGenerating = sessionState === 'generating';
 
   return (
     <>
@@ -311,7 +323,7 @@ export default function AIShapesPracticePage() {
         onClose={handleCloseSummary}
         session={lastSession}
       />
-      <div className="flex h-dvh bg-slate-900 text-foreground font-body">
+      <div className="flex h-dvh bg-background text-foreground font-body">
         <aside className="w-[380px] flex-shrink-0 border-r bg-slate-950 flex flex-col">
           <header className="p-4 border-b border-slate-800 flex items-center justify-between">
             <LineFlowLogo />
@@ -341,7 +353,7 @@ export default function AIShapesPracticePage() {
                         <FormItem>
                           <FormLabel>Shape Description</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., A pyramid" {...field} />
+                            <Input placeholder="e.g., A pyramid" {...field} disabled={isGenerating} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -349,12 +361,17 @@ export default function AIShapesPracticePage() {
                     />
                     <div className="space-y-2">
                       <Label htmlFor="image-count">Number of Images: {imageCount}</Label>
-                      <Slider id="image-count" value={[imageCount]} onValueChange={(val) => setImageCount(val[0])} min={1} max={20} step={1} />
+                      <Slider id="image-count" value={[imageCount]} onValueChange={(val) => setImageCount(val[0])} min={1} max={20} step={1} disabled={isGenerating} />
                     </div>
-                     <Button type="submit" className="w-full" disabled={sessionState === 'generating'}>
-                       {sessionState === 'generating' ? <LoaderCircle className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
-                       {sessionState === 'generating' ? 'Generating...' : `Generate ${imageCount} Images`}
-                    </Button>
+                    <div className="relative">
+                      <Button type="submit" className="w-full" disabled={isGenerating}>
+                        {isGenerating ? <LoaderCircle className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
+                        {isGenerating ? `Generating ${Math.round(generationProgress)}%` : `Generate ${imageCount} Images`}
+                      </Button>
+                      {isGenerating && (
+                        <Progress value={generationProgress} className="absolute bottom-[-4px] left-0 right-0 h-1 bg-primary/20" indicatorClassName="bg-primary" />
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -386,11 +403,11 @@ export default function AIShapesPracticePage() {
 
           <footer className="p-4 border-t border-slate-800 mt-auto bg-slate-950">
             <div className="flex items-center gap-2">
-              <Button onClick={handleSessionToggle} className="w-full" size="lg" disabled={images.length === 0 || sessionState === 'generating'}>
+              <Button onClick={handleSessionToggle} className="w-full" size="lg" disabled={images.length === 0 || isGenerating}>
                 {sessionState === 'running' ? <Pause className="mr-2" /> : <Play className="mr-2" />}
                 {sessionState === 'running' ? 'Pause' : (sessionState === 'paused' ? 'Resume' : 'Start Session')}
               </Button>
-              <Button onClick={handleReset} variant="outline" size="lg" disabled={sessionState === 'idle' && images.length === 0}>
+              <Button onClick={handleReset} variant="outline" size="lg" disabled={(sessionState === 'idle' && images.length === 0) || isGenerating}>
                 {sessionState === 'running' || sessionState === 'paused' ? 'End' : 'Reset'}
               </Button>
             </div>
@@ -487,11 +504,20 @@ export default function AIShapesPracticePage() {
             ) : (
                 <div className="text-center text-muted-foreground max-w-sm flex flex-col items-center gap-4">
                     {sessionState === 'generating' ? (
-                        <>
-                            <LoaderCircle className="mx-auto h-16 w-16 mb-4 text-primary animate-spin" />
+                       <div className="w-full max-w-md space-y-4">
                             <h2 className="text-3xl font-bold text-foreground">Generating Images...</h2>
-                            <p className="mt-2 leading-relaxed">The AI is creating your practice set. This may take a moment.</p>
-                        </>
+                            <Progress value={generationProgress} className="w-full h-2" />
+                            <div className="grid grid-cols-5 gap-4">
+                              {images.map((imgSrc, index) => (
+                                <div key={index} className="aspect-square bg-slate-800 rounded-md animate-in fade-in">
+                                  <Image src={imgSrc} alt={`Generated ref ${index}`} width={100} height={100} className="rounded-md object-cover w-full h-full" />
+                                </div>
+                              ))}
+                              {Array.from({length: imageCount - images.length}).map((_, index) => (
+                                <div key={index} className="aspect-square bg-slate-800/50 rounded-md animate-pulse" />
+                              ))}
+                            </div>
+                        </div>
                     ) : (
                         <>
                             <Sparkles className="mx-auto h-16 w-16 mb-4 text-primary" />
@@ -507,3 +533,5 @@ export default function AIShapesPracticePage() {
     </>
   );
 }
+
+    
