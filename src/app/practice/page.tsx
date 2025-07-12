@@ -172,9 +172,9 @@ export default function LineFlowPracticePage() {
   const nextImage = useCallback(() => {
     if (sessionImageOrder.length === 0) return;
     
-    const nextIndex = (currentImageIndex + 1) % sessionImageOrder.length;
+    const nextIndex = (currentImageIndex + 1);
     
-    if (nextIndex === 0 && sessionState === 'running') {
+    if (nextIndex >= sessionImageOrder.length && sessionState === 'running') {
         handleReset();
         return;
     }
@@ -185,7 +185,7 @@ export default function LineFlowPracticePage() {
     const nextDuration = mode === 'normal' ? initialDuration : sessionDurations[nextIndex] || MIN_IMAGE_DURATION;
     setCurrentDuration(nextDuration);
     setTimeRemaining(nextDuration);
-  }, [sessionImageOrder.length, currentImageIndex, mode, initialDuration, sessionDurations]);
+  }, [sessionImageOrder.length, currentImageIndex, mode, initialDuration, sessionDurations, sessionState]);
 
   useEffect(() => {
     if (sessionState === 'running' && sessionImageOrder.length > 0) {
@@ -199,6 +199,10 @@ export default function LineFlowPracticePage() {
 
           if (newTime <= 0) {
             if (displayState === 'image') {
+              if (currentImageIndex + 1 >= sessionImageOrder.length) {
+                handleReset();
+                return 0;
+              }
               if (intervalDuration > 0) {
                 setDisplayState('interval');
                 return intervalDuration;
@@ -220,7 +224,7 @@ export default function LineFlowPracticePage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [sessionState, sessionImageOrder.length, currentDuration, nextImage, displayState, intervalDuration, audibleAlerts, playBeep]);
+  }, [sessionState, sessionImageOrder.length, currentImageIndex, currentDuration, nextImage, displayState, intervalDuration, audibleAlerts, playBeep]);
   
 
   useEffect(() => {
@@ -365,15 +369,14 @@ export default function LineFlowPracticePage() {
     if (displayState !== 'image') {
       return { background: 'hsl(var(--accent))' };
     }
-    const primaryHue = 220; // HSL hue for primary color
+    const primaryHue = 221;
     const endHue = 0; // HSL hue for red
     const percentage = timeRemaining / currentDuration;
     
     const hue = endHue + (primaryHue - endHue) * percentage;
     
-    // Animate saturation and lightness for more drama
-    const saturation = 70 + 30 * (1 - percentage); // from 70% to 100%
-    const lightness = 50 + 10 * (1-percentage); // from 50% to 60%
+    const saturation = 70 + 30 * (1 - percentage);
+    const lightness = 50 + 10 * (1-percentage);
 
     const colorStart = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     const colorEnd = `hsl(${hue}, ${saturation-20}%, ${lightness-20}%)`;
@@ -384,6 +387,7 @@ export default function LineFlowPracticePage() {
   };
   
   const currentImageSrc = sessionImageOrder[currentImageIndex];
+  const nextImageSrc = sessionImageOrder[(currentImageIndex + 1)];
   
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -532,7 +536,7 @@ export default function LineFlowPracticePage() {
             <div className="w-full h-full flex flex-col items-center justify-center">
               <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md flex items-center gap-4 z-20">
                   <div className="text-xl font-mono font-semibold text-foreground w-40 text-right">
-                    {timeRemaining}s / {currentDuration}s
+                    {timeRemaining}s / {displayState === 'image' ? currentDuration : intervalDuration}s
                   </div>
                   <Progress value={progressValue} className="h-2.5 transition-all flex-1" indicatorStyle={getProgressStyle()} />
               </div>
@@ -546,7 +550,7 @@ export default function LineFlowPracticePage() {
                           onClick={handlePreviousImage} 
                           variant="ghost" 
                           size="icon" 
-                          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-red-500/80 hover:text-white"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
                         >
                           <ChevronLeft className="size-6" />
                         </Button>
@@ -562,7 +566,7 @@ export default function LineFlowPracticePage() {
                           onClick={handleNextImage} 
                           variant="ghost" 
                           size="icon" 
-                          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-green-500/80 hover:text-white"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
                         >
                           <ChevronRight className="size-6" />
                         </Button>
@@ -587,10 +591,21 @@ export default function LineFlowPracticePage() {
                     </div>
                 )}
                 {displayState === 'interval' && sessionState === 'running' && (
-                  <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full">
-                      <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
-                      <h2 className="text-3xl font-bold text-foreground">Interval</h2>
-                      <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
+                  <div className="relative w-full h-full flex flex-col items-center justify-center">
+                    {nextImageSrc && (
+                       <Image
+                          src={nextImageSrc}
+                          alt="Next reference image preview"
+                          fill
+                          className="object-contain blur-2xl opacity-30 scale-110"
+                          key={nextImageSrc}
+                       />
+                    )}
+                    <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full z-10 bg-background/50 backdrop-blur-sm p-8 rounded-lg">
+                        <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
+                        <h2 className="text-3xl font-bold text-foreground">Interval</h2>
+                        <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
+                    </div>
                   </div>
                 )}
               </div>
