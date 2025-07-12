@@ -29,6 +29,24 @@ const modes = [
   },
 ];
 
+const aiModes = [
+  {
+    name: 'AI Shape Generator',
+    description: 'Generate geometric shapes from any angle for fundamental practice.',
+    href: '/practice/shapes',
+    icon: <Sparkles className="size-8 text-primary" />,
+    cta: 'Start Generating'
+  },
+  {
+    name: 'AI Pose Generator',
+    description: 'A timed session where you generate poses and characters from a prompt.',
+    href: '/practice/poses',
+    icon: <PenTool className="size-8 text-accent" />,
+    cta: 'Enter Generator',
+    accent: true
+  }
+];
+
 export default function HomePage() {
   return (
     <div className="min-h-dvh bg-background text-foreground relative overflow-hidden">
@@ -63,97 +81,80 @@ export default function HomePage() {
               </Link>
             </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
-            <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
+            <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm lg:col-span-2 group/timed">
                <CardHeader>
-                  <CardTitle>Timed Practice</CardTitle>
-                  <CardDescription>Load your own images and choose from three classic practice modes.</CardDescription>
+                  <CardTitle>Practice With Your Images</CardTitle>
+                  <CardDescription>Load your own images and practice with or without a timer.</CardDescription>
                 </CardHeader>
-               <CardContent className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
-                {modes.map((mode) => (
-                  <Card key={mode.name} className="flex flex-col hover:shadow-lg transition-all duration-300 bg-background/50">
-                    <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
-                      <div className="p-3 bg-primary/10 rounded-full">
-                          {mode.icon}
-                      </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-xl">{mode.name}</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 flex flex-col justify-between">
-                      <CardDescription>{mode.description}</CardDescription>
-                      <Button asChild className="mt-6 w-full group">
-                        <Link href={mode.href}>
-                          Select Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                      </Button>
-                    </CardContent>
+               <CardContent className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:col-span-2">
+                    {modes.map((mode) => (
+                      <Card key={mode.name} className="flex flex-col hover:shadow-lg transition-all duration-300 bg-background/50">
+                        <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
+                          <div className="p-3 bg-primary/10 rounded-full">
+                              {mode.icon}
+                          </div>
+                          <div className="flex-1">
+                            <CardTitle className="text-xl">{mode.name}</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="flex-1 flex flex-col justify-between">
+                          <CardDescription>{mode.description}</CardDescription>
+                          <Button asChild className="mt-6 w-full group">
+                            <Link href={mode.href}>
+                              Select Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                   <Card className="flex flex-col hover:shadow-xl transition-all duration-300 bg-background/50 md:col-span-2 lg:col-span-1">
+                      <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
+                          <div className="p-3 bg-primary/10 rounded-full">
+                              <Wind className="size-8 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                              <CardTitle>Zen Mode</CardTitle>
+                          </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 flex flex-col justify-between">
+                          <CardDescription>A timer-free session with your own images. Perfect for relaxed sketching.</CardDescription>
+                          <Button asChild className="mt-6 w-full group">
+                              <Link href="/practice/zen">
+                              Enter Zen Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                              </Link>
+                          </Button>
+                      </CardContent>
                   </Card>
-                ))}
               </CardContent>
             </Card>
 
-            <div className="grid lg:grid-rows-3 gap-6">
-                <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
-                    <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
-                        <div className="p-3 bg-primary/10 rounded-full">
-                            <Wind className="size-8 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                            <CardTitle>Zen Mode</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 flex flex-col justify-between">
-                        <CardDescription>A timer-free session with your own images. Perfect for relaxed sketching.</CardDescription>
-                        <Button asChild className="mt-6 w-full group">
-                            <Link href="/practice/zen">
-                            Enter Zen Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        </Button>
-                    </CardContent>
+            <div className="grid gap-6">
+              {aiModes.map((mode) => (
+                <Card key={mode.name} className={`flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm ${mode.accent ? 'border-accent/20' : ''}`}>
+                  <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
+                    <div className={`p-3 rounded-full ${mode.accent ? 'bg-accent/10' : 'bg-primary/10'}`}>
+                        {mode.icon}
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className={mode.accent ? 'text-accent' : ''}>{mode.name}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col justify-between">
+                    <CardDescription className={mode.accent ? 'text-accent-foreground/80' : ''}>{mode.description}</CardDescription>
+                    <Button asChild className={`mt-6 w-full group ${mode.accent ? 'bg-accent text-accent-foreground hover:bg-accent/90' : ''}`}>
+                      <Link href={mode.href}>
+                        {mode.cta} <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </Button>
+                  </CardContent>
                 </Card>
-
-              <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
-                <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
-                  <div className="p-3 bg-primary/10 rounded-full">
-                      <Sparkles className="size-8 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle>AI Shape Generator</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-between">
-                  <CardDescription>Generate geometric shapes from any angle for fundamental practice.</CardDescription>
-                  <Button asChild className="mt-6 w-full group">
-                    <Link href="/practice/shapes">
-                      Start Generating <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-accent/10 text-accent-foreground border-accent/20">
-                <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
-                  <div className="p-3 bg-accent/10 rounded-full">
-                      <PenTool className="size-8 text-accent" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-accent">AI Pose Generator</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-between">
-                  <CardDescription className="text-accent-foreground/80">A timed session where you generate poses and characters from a prompt.</CardDescription>
-                  <Button asChild className="mt-6 w-full group bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Link href="/practice/poses">
-                      Enter Generator <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
+              ))}
             </div>
-
           </div>
         </main>
 
