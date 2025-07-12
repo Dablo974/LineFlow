@@ -32,12 +32,12 @@ const modes = [
 export default function HomePage() {
   return (
     <div className="min-h-dvh bg-background text-foreground relative overflow-hidden">
-      <div className="absolute top-0 left-0 -translate-x-1/3 -translate-y-1/3 opacity-20 text-accent">
+      <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 opacity-20 text-accent animate-float">
         <svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M-50 400C-50 151.472 151.472 -50 400 -50C648.528 -50 850 151.472 850 400C850 648.528 648.528 850 400 850" stroke="currentColor" strokeWidth="2"/>
         </svg>
       </div>
-       <div className="absolute bottom-0 right-0 translate-x-1/3 translate-y-1/3 opacity-20 text-primary">
+       <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 opacity-20 text-primary animate-float-reverse">
         <svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M850 400C850 648.528 648.528 850 400 850C151.472 850 -50 648.528 -50 400C-50 151.472 151.472 -50 400 -50" stroke="currentColor" strokeWidth="2"/>
         </svg>
