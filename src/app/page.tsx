@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineFlowLogo } from '@/components/lineflow-logo';
-import { ArrowRight, TrendingUp, TrendingDown, Hourglass } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Hourglass, History } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const modes = [
@@ -54,7 +54,15 @@ export default function HomePage() {
         </header>
         
         <main className="w-full max-w-4xl">
-          <h2 className="text-2xl font-bold text-center mb-8">Choose Your Practice Mode</h2>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold text-center">Choose Your Practice Mode</h2>
+            <Button asChild variant="outline">
+              <Link href="/history">
+                <History className="mr-2" />
+                Session History
+              </Link>
+            </Button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {modes.map((mode) => (
               <Card key={mode.name} className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">

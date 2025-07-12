@@ -11,15 +11,18 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle, FileImage, Home, Info, LogOut } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle, FileImage, Home, Info, LogOut, History } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { SessionSummaryDialog } from '@/components/session-summary-dialog';
+import type { SessionRecord } from '@/lib/types';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import Link from 'next/link';
 
-
-type SessionState = 'idle' | 'running' | 'paused';
+type SessionState = 'idle' | 'running' | 'paused' | 'finished';
 type DisplayState = 'image' | 'interval';
 type PracticeMode = 'normal' | 'precision' | 'speed';
 
@@ -66,14 +69,18 @@ export default function LineFlowPracticePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(initialDuration);
   const [sessionImageOrder, setSessionImageOrder] = useState<string[]>([]);
+  const [lastSession, setLastSession] = useState<SessionRecord | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const { toast } = useToast();
+  const [sessionHistory, setSessionHistory] = useLocalStorage<SessionRecord[]>('lineflow-history', []);
   
   const [sessionImageCount, setSessionImageCount] = useState(images.length);
+  const startTimeRef = useRef<Date | null>(null);
+
 
   useEffect(() => {
     const modeParam = searchParams.get('mode') as PracticeMode | null;
@@ -169,13 +176,33 @@ export default function LineFlowPracticePage() {
     oscillator.stop(audioContextRef.current.currentTime + 0.1);
   }, [audibleAlerts]);
 
+  const endSession = useCallback(() => {
+    setSessionState('finished');
+    if (timerRef.current) clearInterval(timerRef.current);
+    
+    const endTime = new Date();
+    const totalDuration = startTimeRef.current ? Math.round((endTime.getTime() - startTimeRef.current.getTime()) / 1000) : 0;
+
+    if (totalDuration > 0 || currentImageIndex > 0) {
+      const sessionRecord: SessionRecord = {
+        id: new Date().toISOString(),
+        date: new Date().toISOString(),
+        mode: mode,
+        totalDuration,
+        imagesCompleted: currentImageIndex + 1,
+      };
+      setSessionHistory([sessionRecord, ...sessionHistory]);
+      setLastSession(sessionRecord);
+    }
+  }, [currentImageIndex, mode, sessionHistory, setSessionHistory]);
+
   const nextImage = useCallback(() => {
     if (sessionImageOrder.length === 0) return;
     
     const nextIndex = (currentImageIndex + 1);
     
     if (nextIndex >= sessionImageOrder.length && sessionState === 'running') {
-        handleReset();
+        endSession();
         return;
     }
 
@@ -185,7 +212,7 @@ export default function LineFlowPracticePage() {
     const nextDuration = mode === 'normal' ? initialDuration : sessionDurations[nextIndex] || MIN_IMAGE_DURATION;
     setCurrentDuration(nextDuration);
     setTimeRemaining(nextDuration);
-  }, [sessionImageOrder.length, currentImageIndex, mode, initialDuration, sessionDurations, sessionState]);
+  }, [sessionImageOrder.length, currentImageIndex, mode, initialDuration, sessionDurations, sessionState, endSession]);
 
   useEffect(() => {
     if (sessionState === 'running' && sessionImageOrder.length > 0) {
@@ -200,7 +227,7 @@ export default function LineFlowPracticePage() {
           if (newTime <= 0) {
             if (displayState === 'image') {
               if (currentImageIndex + 1 >= sessionImageOrder.length) {
-                handleReset();
+                endSession();
                 return 0;
               }
               if (intervalDuration > 0) {
@@ -224,7 +251,7 @@ export default function LineFlowPracticePage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [sessionState, sessionImageOrder.length, currentImageIndex, currentDuration, nextImage, displayState, intervalDuration, audibleAlerts, playBeep]);
+  }, [sessionState, sessionImageOrder.length, currentImageIndex, currentDuration, nextImage, displayState, intervalDuration, audibleAlerts, playBeep, endSession]);
   
 
   useEffect(() => {
@@ -260,6 +287,7 @@ export default function LineFlowPracticePage() {
       setTimeRemaining(firstDuration);
       setDisplayState('image');
       setSessionState('running');
+      startTimeRef.current = new Date();
   }
 
   const handleSessionToggle = () => {
@@ -275,21 +303,23 @@ export default function LineFlowPracticePage() {
       setSessionState('paused');
     } else if (sessionState === 'paused') {
       setSessionState('running');
-    } else { // idle
+    } else { // idle or finished
       startSession();
     }
   };
 
   const handleReset = () => {
-    setSessionState('idle');
-    setDisplayState('image');
-    
-    const firstDuration = mode === 'normal' ? initialDuration : (sessionDurations[0] || MIN_IMAGE_DURATION);
-    setCurrentDuration(firstDuration);
-    setTimeRemaining(firstDuration);
-
-    setCurrentImageIndex(0);
-    setSessionImageOrder([]);
+    if (sessionState === 'running' || sessionState === 'paused') {
+      endSession();
+    } else {
+       setSessionState('idle');
+       setDisplayState('image');
+       const firstDuration = mode === 'normal' ? initialDuration : (sessionDurations[0] || MIN_IMAGE_DURATION);
+       setCurrentDuration(firstDuration);
+       setTimeRemaining(firstDuration);
+       setCurrentImageIndex(0);
+       setSessionImageOrder([]);
+    }
   };
   
   const resetTimerAndDisplay = () => {
@@ -405,227 +435,253 @@ export default function LineFlowPracticePage() {
     
     const sortedDurations = Object.keys(counts).map(Number).sort((a,b) => a - b);
     
-    return sortedDurations.map(duration => `${counts[duration]} x ${duration}s`).join(', ');
+    return sortedDurations.map(duration => `${counts[duration]} x ${formatTime(duration)}`).join(', ');
   }
 
+  const handleCloseSummary = () => {
+    setLastSession(null);
+    setSessionState('idle');
+    setDisplayState('image');
+    
+    const firstDuration = mode === 'normal' ? initialDuration : (sessionDurations[0] || MIN_IMAGE_DURATION);
+    setCurrentDuration(firstDuration);
+    setTimeRemaining(firstDuration);
+    setCurrentImageIndex(0);
+    setSessionImageOrder([]);
+  };
+
   return (
-    <div className="flex h-dvh bg-muted/40 text-foreground font-body">
-      <aside className="w-[380px] flex-shrink-0 border-r bg-background flex flex-col">
-        <header className="p-4 border-b flex items-center justify-between">
-          <LineFlowLogo />
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-              <LogOut className="mr-2 size-4" /> Change Mode
-            </Button>
-          </div>
-        </header>
-        
-        <ScrollArea className="flex-1">
-          <div className="p-4 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5 text-primary" /> {getModeName(mode)} Mode Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {mode === 'normal' ? (
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Image Duration: {initialDuration}s</Label>
-                      <Slider id="duration" value={[initialDuration]} onValueChange={(val) => setInitialDuration(val[0])} min={5} max={120} step={5} />
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="total-duration">Total Session Duration: {formatTime(totalSessionDuration)}</Label>
-                            <Slider id="total-duration" value={[totalSessionDuration]} onValueChange={(val) => setTotalSessionDuration(val[0])} min={60} max={3600} step={60} />
-                        </div>
-                        <Card className="bg-muted/50">
-                            <CardContent className="p-3 text-sm text-muted-foreground space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-medium flex items-center gap-1.5"><Images className="size-4" /> Images In Session</span>
-                                    <span>{sessionImageCount} of {images.length} used</span>
-                                </div>
-                                <div className="flex justify-between items-center text-right">
-                                    <span className="font-medium flex items-center gap-1.5"><Hourglass className="size-4" /> Time Per Image</span>
-                                    <span className="max-w-[160px]">{formatDurations(sessionDurations)}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="font-medium flex items-center gap-1.5"><Info className="size-4" /> Minimum Time</span>
-                                    <span>{MIN_IMAGE_DURATION}s</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="interval">Interval Duration: {intervalDuration}s</Label>
-                  <Slider id="interval" value={[intervalDuration]} onValueChange={(val) => setIntervalDuration(val[0])} min={0} max={30} step={1} />
-                </div>
-                 <div className="flex items-center justify-between pt-2">
-                  <Label htmlFor="audible-alerts" className="flex items-center gap-2">
-                    <Bell className="size-4" />
-                    Audible Alerts
-                  </Label>
-                  <Switch id="audible-alerts" checked={audibleAlerts} onCheckedChange={setAudibleAlerts} />
-                </div>
-              </CardContent>
-            </Card>
+    <>
+      <SessionSummaryDialog
+        isOpen={sessionState === 'finished' && lastSession !== null}
+        onClose={handleCloseSummary}
+        session={lastSession}
+      />
+      <div className="flex h-dvh bg-muted/40 text-foreground font-body">
+        <aside className="w-[380px] flex-shrink-0 border-r bg-background flex flex-col">
+          <header className="p-4 border-b flex items-center justify-between">
+            <LineFlowLogo />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
+                <LogOut className="mr-2 size-4" /> Change Mode
+              </Button>
+            </div>
+          </header>
+          
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5 text-primary" /> {getModeName(mode)} Mode Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {mode === 'normal' ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="duration">Image Duration: {formatTime(initialDuration)}</Label>
+                        <Slider id="duration" value={[initialDuration]} onValueChange={(val) => setInitialDuration(val[0])} min={5} max={300} step={5} />
+                      </div>
+                  ) : (
+                      <div className="space-y-4">
+                          <div className="space-y-2">
+                              <Label htmlFor="total-duration">Total Session Duration: {formatTime(totalSessionDuration)}</Label>
+                              <Slider id="total-duration" value={[totalSessionDuration]} onValueChange={(val) => setTotalSessionDuration(val[0])} min={60} max={3600} step={60} />
+                          </div>
+                          <Card className="bg-muted/50">
+                              <CardContent className="p-3 text-sm text-muted-foreground space-y-2">
+                                  <div className="flex justify-between items-center">
+                                      <span className="font-medium flex items-center gap-1.5"><Images className="size-4" /> Images In Session</span>
+                                      <span>{sessionImageCount} of {images.length} used</span>
+                                  </div>
+                                  <div className="flex justify-between items-start text-right">
+                                      <span className="font-medium flex items-center gap-1.5 pt-0.5"><Hourglass className="size-4" /> Time Per Image</span>
+                                      <span className="max-w-[180px]">{formatDurations(sessionDurations)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                      <span className="font-medium flex items-center gap-1.5"><Info className="size-4" /> Minimum Time</span>
+                                      <span>{MIN_IMAGE_DURATION}s</span>
+                                  </div>
+                              </CardContent>
+                          </Card>
+                      </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="interval">Interval Duration: {formatTime(intervalDuration)}</Label>
+                    <Slider id="interval" value={[intervalDuration]} onValueChange={(val) => setIntervalDuration(val[0])} min={0} max={30} step={1} />
+                  </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <Label htmlFor="audible-alerts" className="flex items-center gap-2">
+                      <Bell className="size-4" />
+                      Audible Alerts
+                    </Label>
+                    <Switch id="audible-alerts" checked={audibleAlerts} onCheckedChange={setAudibleAlerts} />
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5 text-primary" /> Image Set</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={() => fileInputRef.current?.click()}>
-                    <FileImage className="mr-2" /> Load Files
+              <Card>
+                <CardHeader className="flex flex-row justify-between items-center">
+                  <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5 text-primary" /> Image Set</CardTitle>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/history">
+                      <History className="mr-2 size-4" /> History
+                    </Link>
                   </Button>
-                  <Button onClick={() => folderInputRef.current?.click()}>
-                    <FolderOpen className="mr-2" /> Load Folder
-                  </Button>
-                  <input type="file" ref={folderInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" {...({ webkitdirectory: "true", directory: "true" } as any)} />
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" />
-                </div>
-                
-                {images.length > 0 && 
-                    <Button onClick={clearImages} variant="destructive" size="sm" className="w-full">
-                      <Trash2 className="mr-2" /> Clear All Images
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button onClick={() => fileInputRef.current?.click()}>
+                      <FileImage className="mr-2" /> Load Files
                     </Button>
-                  }
-                
-                 <div className="flex items-center justify-between pt-2">
-                  <Label htmlFor="shuffle" className="flex items-center gap-2">
-                    <Shuffle className="size-4" />
-                    Shuffle Images
-                  </Label>
-                  <Switch id="shuffle" checked={shuffleImages} onCheckedChange={setShuffleImages} />
+                    <Button onClick={() => folderInputRef.current?.click()}>
+                      <FolderOpen className="mr-2" /> Load Folder
+                    </Button>
+                    <input type="file" ref={folderInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" {...({ webkitdirectory: "true", directory: "true" } as any)} />
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" />
+                  </div>
+                  
+                  {images.length > 0 && 
+                      <Button onClick={clearImages} variant="destructive" size="sm" className="w-full">
+                        <Trash2 className="mr-2" /> Clear All Images
+                      </Button>
+                    }
+                  
+                  <div className="flex items-center justify-between pt-2">
+                    <Label htmlFor="shuffle" className="flex items-center gap-2">
+                      <Shuffle className="size-4" />
+                      Shuffle Images
+                    </Label>
+                    <Switch id="shuffle" checked={shuffleImages} onCheckedChange={setShuffleImages} />
+                  </div>
+                  
+                  {images.length > 0 && (
+                    <ScrollArea className="h-40 w-full rounded-md border p-2">
+                      <div className="space-y-2">
+                        {images.map((imgSrc, index) => (
+                          <div key={`${imgSrc}-${index}`} className="flex items-center gap-2 p-1 rounded-md animate-in fade-in">
+                            <Image src={imgSrc} alt={`Reference ${index + 1}`} width={40} height={40} className="rounded object-cover aspect-square" />
+                            <span className="text-sm truncate flex-1">{`Image ${index + 1}`}</span>
+                            <Button variant="ghost" size="icon" className="size-7" onClick={() => removeImage(index)}><X className="size-4" /></Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </ScrollArea>
+
+          <footer className="p-4 border-t mt-auto bg-background">
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSessionToggle} className="w-full" size="lg" disabled={images.length === 0}>
+                {sessionState === 'running' ? <Pause className="mr-2" /> : <Play className="mr-2" />}
+                {sessionState === 'running' ? 'Pause' : (sessionState === 'paused' ? 'Resume' : 'Start Session')}
+              </Button>
+              <Button onClick={handleReset} variant="outline" size="lg" disabled={sessionState === 'idle'}>
+                {sessionState === 'running' || sessionState === 'paused' ? 'End' : 'Reset'}
+              </Button>
+            </div>
+          </footer>
+        </aside>
+
+        <main className="flex-1 flex flex-col items-center justify-center p-8 relative transition-all duration-300">
+          <TooltipProvider>
+            {(sessionState === 'running' || sessionState === 'paused') ? (
+              <div className="w-full h-full flex flex-col items-center justify-center">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md flex items-center gap-4 z-20">
+                    <div className="text-xl font-mono font-semibold text-foreground w-40 text-right">
+                      {formatTime(timeRemaining)} / {displayState === 'image' ? formatTime(currentDuration) : formatTime(intervalDuration)}
+                    </div>
+                    <Progress value={progressValue} className="h-2.5 transition-all flex-1" indicatorStyle={getProgressStyle()} />
                 </div>
                 
-                {images.length > 0 && (
-                  <ScrollArea className="h-40 w-full rounded-md border p-2">
-                    <div className="space-y-2">
-                      {images.map((imgSrc, index) => (
-                        <div key={`${imgSrc}-${index}`} className="flex items-center gap-2 p-1 rounded-md animate-in fade-in">
-                          <Image src={imgSrc} alt={`Reference ${index + 1}`} width={40} height={40} className="rounded object-cover aspect-square" />
-                          <span className="text-sm truncate flex-1">{`Image ${index + 1}`}</span>
-                          <Button variant="ghost" size="icon" className="size-7" onClick={() => removeImage(index)}><X className="size-4" /></Button>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </ScrollArea>
+                <div className="relative w-full h-full pt-16">
+                  {sessionImageOrder.length > 1 && displayState === 'image' && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            onClick={handlePreviousImage} 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
+                          >
+                            <ChevronLeft className="size-6" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p>Previous Image</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            onClick={handleNextImage} 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
+                          >
+                            <ChevronRight className="size-6" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                          <p>Next Image</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
 
-        <footer className="p-4 border-t mt-auto bg-background">
-          <div className="flex items-center gap-2">
-            <Button onClick={handleSessionToggle} className="w-full" size="lg" disabled={images.length === 0}>
-              {sessionState === 'running' ? <Pause className="mr-2" /> : <Play className="mr-2" />}
-              {sessionState === 'running' ? 'Pause' : (sessionState === 'paused' ? 'Resume' : 'Start Session')}
-            </Button>
-            <Button onClick={handleReset} variant="outline" size="lg" disabled={sessionState === 'idle'}>Reset</Button>
-          </div>
-        </footer>
-      </aside>
-
-      <main className="flex-1 flex flex-col items-center justify-center p-8 relative transition-all duration-300">
-        <TooltipProvider>
-          {(sessionState === 'running' || sessionState === 'paused') ? (
-            <div className="w-full h-full flex flex-col items-center justify-center">
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md flex items-center gap-4 z-20">
-                  <div className="text-xl font-mono font-semibold text-foreground w-40 text-right">
-                    {timeRemaining}s / {displayState === 'image' ? currentDuration : intervalDuration}s
-                  </div>
-                  <Progress value={progressValue} className="h-2.5 transition-all flex-1" indicatorStyle={getProgressStyle()} />
-              </div>
-              
-              <div className="relative w-full h-full pt-16">
-                {sessionImageOrder.length > 1 && displayState === 'image' && (
-                  <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          onClick={handlePreviousImage} 
-                          variant="ghost" 
-                          size="icon" 
-                          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
-                        >
-                          <ChevronLeft className="size-6" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Previous Image</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          onClick={handleNextImage} 
-                          variant="ghost" 
-                          size="icon" 
-                          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
-                        >
-                          <ChevronRight className="size-6" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        <p>Next Image</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </>
-                )}
-
-                {currentImageSrc && displayState === 'image' && (
-                    <div className="relative w-full h-full animate-in fade-in zoom-in-95 duration-500">
+                  {currentImageSrc && displayState === 'image' && (
+                      <div className="relative w-full h-full animate-in fade-in zoom-in-95 duration-500">
+                          <Image
+                              src={currentImageSrc}
+                              alt={`Reference image`}
+                              fill
+                              className="object-contain"
+                              key={currentImageSrc}
+                              priority
+                          />
+                      </div>
+                  )}
+                  {displayState === 'interval' && sessionState === 'running' && (
+                    <div className="relative w-full h-full flex flex-col items-center justify-center">
+                      {nextImageSrc && (
                         <Image
-                            src={currentImageSrc}
-                            alt={`Reference image`}
+                            src={nextImageSrc}
+                            alt="Next reference image preview"
                             fill
-                            className="object-contain"
-                            key={currentImageSrc}
-                            priority
+                            className="object-contain blur-2xl opacity-30 scale-110"
+                            key={nextImageSrc}
                         />
+                      )}
+                      <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full z-10 bg-background/50 backdrop-blur-sm p-8 rounded-lg">
+                          <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
+                          <h2 className="text-3xl font-bold text-foreground">Interval</h2>
+                          <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
+                      </div>
                     </div>
-                )}
-                {displayState === 'interval' && sessionState === 'running' && (
-                  <div className="relative w-full h-full flex flex-col items-center justify-center">
-                    {nextImageSrc && (
-                       <Image
-                          src={nextImageSrc}
-                          alt="Next reference image preview"
-                          fill
-                          className="object-contain blur-2xl opacity-30 scale-110"
-                          key={nextImageSrc}
-                       />
-                    )}
-                    <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full z-10 bg-background/50 backdrop-blur-sm p-8 rounded-lg">
-                        <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
-                        <h2 className="text-3xl font-bold text-foreground">Interval</h2>
-                        <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
+                  )}
+                </div>
+                
+                {sessionState === 'paused' && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 z-30 animate-in fade-in">
+                        <Pause className="size-16 text-primary" />
+                        <p className="text-2xl font-semibold text-foreground">Paused</p>
                     </div>
-                  </div>
                 )}
               </div>
-              
-              {sessionState === 'paused' && (
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 z-30 animate-in fade-in">
-                      <Pause className="size-16 text-primary" />
-                      <p className="text-2xl font-semibold text-foreground">Paused</p>
-                  </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center text-muted-foreground max-w-sm">
-              <Images className="mx-auto h-16 w-16 mb-4 text-primary" />
-              <h2 className="text-3xl font-bold text-foreground">Ready for {getModeName(mode)} Mode</h2>
-              <p className="mt-2 leading-relaxed">Load some images from your device to get started on your gesture drawing practice.</p>
-            </div>
-          )}
-        </TooltipProvider>
-      </main>
-    </div>
+            ) : (
+              <div className="text-center text-muted-foreground max-w-sm">
+                <Images className="mx-auto h-16 w-16 mb-4 text-primary" />
+                <h2 className="text-3xl font-bold text-foreground">Ready for {getModeName(mode)} Mode</h2>
+                <p className="mt-2 leading-relaxed">Load some images from your device to get started on your gesture drawing practice.</p>
+              </div>
+            )}
+          </TooltipProvider>
+        </main>
+      </div>
+    </>
   );
 }
