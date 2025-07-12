@@ -5,25 +5,25 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineFlowLogo } from '@/components/lineflow-logo';
-import { ArrowRight, TrendingUp, TrendingDown, Hourglass, History, Sparkles, PenTool } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Hourglass, History, Sparkles, PenTool, Wind } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const modes = [
   {
     name: 'Normal',
-    description: 'Practice with a consistent timer for each image. Ideal for standard sessions.',
+    description: 'A consistent timer for each image. Ideal for standard sessions.',
     href: '/practice?mode=normal',
     icon: <Hourglass className="size-8 text-primary" />,
   },
   {
     name: 'Precision',
-    description: 'Start with a short timer that gradually increases. Challenges you to capture gestures quickly, then refine.',
+    description: 'Timer gradually increases. Challenges you to capture gestures quickly, then refine.',
     href: '/practice?mode=precision',
     icon: <TrendingUp className="size-8 text-primary" />,
   },
   {
     name: 'Speed',
-    description: 'Start with a long timer that gradually decreases. Pushes you to work faster as the session progresses.',
+    description: 'Timer gradually decreases. Pushes you to work faster as the session progresses.',
     href: '/practice?mode=speed',
     icon: <TrendingDown className="size-8 text-primary" />,
   },
@@ -94,7 +94,26 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <div className="grid lg:grid-rows-2 gap-6">
+            <div className="grid lg:grid-rows-3 gap-6">
+                <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
+                    <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
+                        <div className="p-3 bg-primary/10 rounded-full">
+                            <Wind className="size-8 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                            <CardTitle>Zen Mode</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col justify-between">
+                        <CardDescription>A timer-free session with your own images. Perfect for relaxed sketching.</CardDescription>
+                        <Button asChild className="mt-6 w-full group">
+                            <Link href="/practice/zen">
+                            Enter Zen Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+
               <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
                   <div className="p-3 bg-primary/10 rounded-full">
@@ -113,24 +132,26 @@ export default function HomePage() {
                   </Button>
                 </CardContent>
               </Card>
+
               <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-accent/10 text-accent-foreground border-accent/20">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
                   <div className="p-3 bg-accent/10 rounded-full">
                       <PenTool className="size-8 text-accent" />
                   </div>
                   <div className="flex-1">
-                    <CardTitle className="text-accent">AI Studio</CardTitle>
+                    <CardTitle className="text-accent">AI Pose Generator</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between">
-                  <CardDescription className="text-accent-foreground/80">A timer-free session. Generate poses and characters from a prompt.</CardDescription>
+                  <CardDescription className="text-accent-foreground/80">A timed session where you generate poses and characters from a prompt.</CardDescription>
                   <Button asChild className="mt-6 w-full group bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Link href="/practice/studio">
-                      Enter Studio <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    <Link href="/practice/poses">
+                      Enter Generator <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </Button>
                 </CardContent>
               </Card>
+
             </div>
 
           </div>
