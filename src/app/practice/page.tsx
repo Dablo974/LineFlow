@@ -11,9 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle, FileImage, Home } from 'lucide-react';
+import { FolderOpen, Images, Pause, Play, Trash2, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Shuffle, FileImage, Home, Info } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 
@@ -42,7 +42,7 @@ const getModeName = (mode: PracticeMode) => {
     }
 }
 
-const DURATION_STEP = 5; // How much the timer changes in precision/speed modes
+const MIN_IMAGE_DURATION = 5; // seconds
 
 export default function LineFlowPracticePage() {
   const searchParams = useSearchParams();
@@ -51,10 +51,14 @@ export default function LineFlowPracticePage() {
   const [mode, setMode] = useState<PracticeMode>('normal');
   const [images, setImages] = useState<string[]>([]);
   const [initialDuration, setInitialDuration] = useState(30);
+  const [totalSessionDuration, setTotalSessionDuration] = useState(600); // 10 minutes in seconds
+  
   const [currentDuration, setCurrentDuration] = useState(30);
+  const [sessionDurations, setSessionDurations] = useState<number[]>([]);
+
   const [intervalDuration, setIntervalDuration] = useState(5);
   const [audibleAlerts, setAudibleAlerts] = useState(false);
-  const [shuffle, setShuffle] = useState(true);
+  const [shuffleImages, setShuffleImages] = useState(true);
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [displayState, setDisplayState] = useState<DisplayState>('image');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -71,17 +75,60 @@ export default function LineFlowPracticePage() {
     const modeParam = searchParams.get('mode') as PracticeMode | null;
     if (modeParam && ['normal', 'precision', 'speed'].includes(modeParam)) {
       setMode(modeParam);
-      if (modeParam === 'precision') setInitialDuration(15);
-      if (modeParam === 'speed') setInitialDuration(60);
     } else {
       router.push('/');
     }
   }, [searchParams, router]);
 
+  const calculateDurations = useCallback(() => {
+    if (mode === 'normal' || images.length === 0) {
+      return [];
+    }
+
+    const numImages = images.length;
+    const averageDuration = Math.floor(totalSessionDuration / numImages);
+
+    if (averageDuration < MIN_IMAGE_DURATION) {
+      return Array(numImages).fill(MIN_IMAGE_DURATION);
+    }
+    
+    // Create an arithmetic progression
+    const step = Math.max(1, Math.floor( (averageDuration - MIN_IMAGE_DURATION) / (numImages -1) * 2));
+    
+    let durations: number[] = [];
+    let firstTerm = averageDuration - Math.floor(((numImages - 1) * step) / 2);
+    if(firstTerm < MIN_IMAGE_DURATION) {
+        firstTerm = MIN_IMAGE_DURATION
+    }
+    
+    for (let i = 0; i < numImages; i++) {
+        durations.push(firstTerm + i * step);
+    }
+
+    // Adjust to match total duration
+    const currentTotal = durations.reduce((a, b) => a + b, 0);
+    const diff = totalSessionDuration - currentTotal;
+    const adjustment = Math.floor(diff / numImages);
+    const remainder = diff % numImages;
+
+    durations = durations.map((d, i) => d + adjustment + (i < remainder ? 1 : 0));
+    
+    // Ensure no duration is below the minimum
+    durations = durations.map(d => Math.max(MIN_IMAGE_DURATION, d));
+
+    if (mode === 'speed') {
+        return durations.reverse();
+    }
+    return durations;
+  }, [mode, images, totalSessionDuration]);
+
   useEffect(() => {
-    setCurrentDuration(initialDuration);
-    setTimeRemaining(initialDuration);
-  }, [initialDuration]);
+    if (mode !== 'normal') {
+      const calculated = calculateDurations();
+      setSessionDurations(calculated);
+    }
+  }, [mode, images.length, totalSessionDuration, calculateDurations]);
+
 
   const playBeep = useCallback(() => {
     if (!audibleAlerts) return;
@@ -110,18 +157,15 @@ export default function LineFlowPracticePage() {
 
   const nextImage = useCallback(() => {
     if (sessionImageOrder.length === 0) return;
-    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % sessionImageOrder.length);
+    
+    const nextIndex = (currentImageIndex + 1) % sessionImageOrder.length;
+    setCurrentImageIndex(nextIndex);
     setDisplayState('image');
 
-    let nextDuration = currentDuration;
-    if (mode === 'precision') {
-        nextDuration = Math.min(120, currentDuration + DURATION_STEP);
-    } else if (mode === 'speed') {
-        nextDuration = Math.max(5, currentDuration - DURATION_STEP);
-    }
+    const nextDuration = mode === 'normal' ? initialDuration : sessionDurations[nextIndex] || MIN_IMAGE_DURATION;
     setCurrentDuration(nextDuration);
     setTimeRemaining(nextDuration);
-  }, [sessionImageOrder.length, currentDuration, mode]);
+  }, [sessionImageOrder.length, currentImageIndex, mode, initialDuration, sessionDurations]);
 
   useEffect(() => {
     if (sessionState === 'running' && sessionImageOrder.length > 0) {
@@ -171,6 +215,19 @@ export default function LineFlowPracticePage() {
       }
     };
   }, [images]);
+  
+  const startSession = () => {
+      const imageOrder = shuffleImages ? shuffleArray([...images]) : [...images];
+      setSessionImageOrder(imageOrder);
+      
+      const firstDuration = mode === 'normal' ? initialDuration : (calculateDurations()[0] || MIN_IMAGE_DURATION);
+      
+      setCurrentImageIndex(0);
+      setCurrentDuration(firstDuration);
+      setTimeRemaining(firstDuration);
+      setDisplayState('image');
+      setSessionState('running');
+  }
 
   const handleSessionToggle = () => {
     if (images.length === 0) {
@@ -179,48 +236,46 @@ export default function LineFlowPracticePage() {
     }
     if (sessionState === 'running') {
       setSessionState('paused');
-    } else {
+    } else if (sessionState === 'paused') {
       setSessionState('running');
-      if (sessionState === 'idle') {
-        if (shuffle) {
-          setSessionImageOrder(shuffleArray([...images]));
-        } else {
-          setSessionImageOrder([...images]);
-        }
-        setCurrentDuration(initialDuration);
-        setTimeRemaining(initialDuration);
-        setCurrentImageIndex(0);
-        setDisplayState('image');
-      }
+    } else { // idle
+      startSession();
     }
   };
 
   const handleReset = () => {
     setSessionState('idle');
     setDisplayState('image');
-    setCurrentDuration(initialDuration);
-    setTimeRemaining(initialDuration);
+    
+    const firstDuration = mode === 'normal' ? initialDuration : (sessionDurations[0] || MIN_IMAGE_DURATION);
+    setCurrentDuration(firstDuration);
+    setTimeRemaining(firstDuration);
+
     setCurrentImageIndex(0);
     setSessionImageOrder([]);
   };
   
   const resetTimerAndDisplay = () => {
-      setTimeRemaining(currentDuration);
+    if (sessionState === 'idle') return;
+      const newDuration = mode === 'normal' ? initialDuration : (sessionDurations[currentImageIndex] || MIN_IMAGE_DURATION);
+      setCurrentDuration(newDuration);
+      setTimeRemaining(newDuration);
       setDisplayState('image');
        if (timerRef.current) clearInterval(timerRef.current);
       if (sessionState === 'running') {
-          // This is a bit of a hack to restart the interval
           setSessionState('paused');
           setTimeout(() => setSessionState('running'), 10);
       }
   }
 
   const handlePreviousImage = () => {
+    if (sessionState === 'idle') return;
     setCurrentImageIndex((prevIndex) => (prevIndex - 1 + sessionImageOrder.length) % sessionImageOrder.length);
     resetTimerAndDisplay();
   };
 
   const handleNextImage = () => {
+    if (sessionState === 'idle') return;
     setCurrentImageIndex((prevIndex) => (prevIndex + 1) % sessionImageOrder.length);
     resetTimerAndDisplay();
   };
@@ -291,6 +346,12 @@ export default function LineFlowPracticePage() {
   };
   
   const currentImageSrc = sessionImageOrder[currentImageIndex];
+  
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  }
 
   return (
     <div className="flex h-dvh bg-background text-foreground font-body">
@@ -309,10 +370,40 @@ export default function LineFlowPracticePage() {
                 <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5" /> {getModeName(mode)} Mode Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="duration">{mode === 'normal' ? 'Image Duration' : 'Initial Duration'}: {initialDuration}s</Label>
-                  <Slider id="duration" value={[initialDuration]} onValueChange={(val) => setInitialDuration(val[0])} min={5} max={120} step={5} />
-                </div>
+                {mode === 'normal' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="duration">Image Duration: {initialDuration}s</Label>
+                      <Slider id="duration" value={[initialDuration]} onValueChange={(val) => setInitialDuration(val[0])} min={5} max={120} step={5} />
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="total-duration">Total Session Duration: {formatTime(totalSessionDuration)}</Label>
+                            <Slider id="total-duration" value={[totalSessionDuration]} onValueChange={(val) => setTotalSessionDuration(val[0])} min={60} max={3600} step={60} />
+                        </div>
+                        <Card className="bg-muted/50">
+                            <CardContent className="p-3 text-sm text-muted-foreground space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium flex items-center gap-1.5"><Images className="size-4" /> Images</span>
+                                    <span>{images.length}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium flex items-center gap-1.5"><Hourglass className="size-4" /> Time Per Image</span>
+                                    <span>
+                                        {images.length > 0 && sessionDurations.length > 0 ? 
+                                            `${sessionDurations[0]}s - ${sessionDurations[sessionDurations.length - 1]}s` : 
+                                            'N/A'
+                                        }
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium flex items-center gap-1.5"><Info className="size-4" /> Minimum Time</span>
+                                    <span>{MIN_IMAGE_DURATION}s</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="interval">Interval Duration: {intervalDuration}s</Label>
                   <Slider id="interval" value={[intervalDuration]} onValueChange={(val) => setIntervalDuration(val[0])} min={0} max={30} step={1} />
@@ -354,7 +445,7 @@ export default function LineFlowPracticePage() {
                     <Shuffle className="size-4" />
                     Shuffle
                   </Label>
-                  <Switch id="shuffle" checked={shuffle} onCheckedChange={setShuffle} />
+                  <Switch id="shuffle" checked={shuffleImages} onCheckedChange={setShuffleImages} />
                 </div>
                 
                 {images.length > 0 && (
@@ -391,7 +482,7 @@ export default function LineFlowPracticePage() {
           {(sessionState === 'running' || sessionState === 'paused') ? (
             <div className="w-full h-full flex flex-col items-center justify-center">
               <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 max-w-md flex items-center gap-4 z-20">
-                  <div className="text-xl font-mono font-semibold text-primary w-24 text-right">
+                  <div className="text-xl font-mono font-semibold text-primary w-36 text-right">
                     {timeRemaining}s / {currentDuration}s
                   </div>
                   <Progress value={progressValue} className="h-2 transition-all flex-1" indicatorStyle={getProgressStyle()} />
@@ -474,3 +565,5 @@ export default function LineFlowPracticePage() {
     </div>
   );
 }
+
+    
