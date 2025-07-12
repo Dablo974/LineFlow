@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineFlowLogo } from '@/components/lineflow-logo';
-import { ArrowRight, TrendingUp, TrendingDown, Hourglass, History } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Hourglass, History, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const modes = [
@@ -53,7 +53,7 @@ export default function HomePage() {
           <p className="mt-2 text-lg text-muted-foreground">A focused gesture drawing practice app for artists.</p>
         </header>
         
-        <main className="w-full max-w-4xl">
+        <main className="w-full max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold text-center">Choose Your Practice Mode</h2>
             <Button asChild variant="outline">
@@ -63,32 +63,61 @@ export default function HomePage() {
               </Link>
             </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {modes.map((mode) => (
-              <Card key={mode.name} className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
-                <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
-                  <div className="p-3 bg-primary/10 rounded-full">
-                      {mode.icon}
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle>{mode.name}</CardTitle>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm md:col-span-1 lg:col-span-3">
+               <CardHeader>
+                  <CardTitle>Manual Practice</CardTitle>
+                  <CardDescription>Load your own images and choose from three classic practice modes.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-between">
-                  <CardDescription>{mode.description}</CardDescription>
-                  <Button asChild className="mt-6 w-full group">
-                    <Link href={mode.href}>
-                      Select Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+               <CardContent className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+                {modes.map((mode) => (
+                  <Card key={mode.name} className="flex flex-col hover:shadow-lg transition-all duration-300 bg-background/50">
+                    <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
+                      <div className="p-3 bg-primary/10 rounded-full">
+                          {mode.icon}
+                      </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-xl">{mode.name}</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col justify-between">
+                      <CardDescription>{mode.description}</CardDescription>
+                      <Button asChild className="mt-6 w-full group">
+                        <Link href={mode.href}>
+                          Select Mode <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
+                <div className="p-3 bg-primary/10 rounded-full">
+                    <Sparkles className="size-8 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle>AI Shapes</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col justify-between">
+                <CardDescription>Describe a geometric shape and let AI generate infinite reference images from different angles.</CardDescription>
+                <Button asChild className="mt-6 w-full group">
+                  <Link href="/practice/shapes">
+                    Start Generating <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
           </div>
         </main>
 
         <footer className="mt-16 text-center text-muted-foreground text-sm">
-          <p>Load your own images and start drawing!</p>
+          <p>Load your own images or generate them with AI and start drawing!</p>
         </footer>
       </div>
     </div>

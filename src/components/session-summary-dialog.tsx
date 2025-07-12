@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, Clock, History, Home, ImageIcon } from 'lucide-react';
+import { CheckCircle, Clock, History, Home, ImageIcon, Sparkles, Folder } from 'lucide-react';
 import type { SessionRecord } from '@/lib/types';
 
 interface SessionSummaryDialogProps {
@@ -26,6 +26,7 @@ const getModeName = (mode: SessionRecord['mode']) => {
     switch(mode) {
         case 'precision': return 'Precision';
         case 'speed': return 'Speed';
+        case 'shapes': return 'AI Shapes';
         default: return 'Normal';
     }
 }
@@ -47,6 +48,16 @@ export function SessionSummaryDialog({ isOpen, onClose, session }: SessionSummar
   const router = useRouter();
 
   if (!session) return null;
+
+  const getIconForSet = (set: SessionRecord['imageSet']) => {
+    switch(set){
+      case 'ai':
+        return <Sparkles className="size-5 text-primary" />
+      case 'custom':
+      default:
+        return <Folder className="size-5 text-primary" />
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -75,6 +86,10 @@ export function SessionSummaryDialog({ isOpen, onClose, session }: SessionSummar
                      <div className="flex justify-between items-center text-lg">
                         <span className="font-medium text-foreground flex items-center gap-2"><ImageIcon className="size-5 text-primary" /> Images</span>
                         <span>{session.imagesCompleted}</span>
+                    </div>
+                     <div className="flex justify-between items-center text-lg">
+                        <span className="font-medium text-foreground flex items-center gap-2">{getIconForSet(session.imageSet)} Image Set</span>
+                        <span className="capitalize">{session.imageSet}</span>
                     </div>
                 </CardContent>
             </Card>

@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { SessionRecord } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Clock, History, ImageIcon, Timer } from 'lucide-react';
+import { ArrowLeft, Clock, History, ImageIcon, Timer, Sparkles, Folder } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -18,6 +18,7 @@ const getModeName = (mode: SessionRecord['mode']) => {
     switch(mode) {
         case 'precision': return 'Precision';
         case 'speed': return 'Speed';
+        case 'shapes': return 'AI Shapes';
         default: return 'Normal';
     }
 }
@@ -40,6 +41,16 @@ export default function HistoryPage() {
   const clearHistory = () => {
     setHistory([]);
   };
+  
+  const getIconForSet = (set: SessionRecord['imageSet']) => {
+    switch(set){
+      case 'ai':
+        return <Sparkles className="size-5 text-primary/80" />
+      case 'custom':
+      default:
+        return <Folder className="size-5 text-primary/80" />
+    }
+  }
 
   return (
     <div className="min-h-dvh bg-muted/40">
@@ -94,13 +105,17 @@ export default function HistoryPage() {
                   </CardHeader>
                   <CardContent className="flex items-center justify-between text-muted-foreground">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2" title="Total Duration">
                             <Clock className="size-5 text-primary/80" />
                             <span>{formatDuration(session.totalDuration)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2" title="Images Completed">
                            <ImageIcon className="size-5 text-primary/80" />
                            <span>{session.imagesCompleted} images</span>
+                        </div>
+                         <div className="flex items-center gap-2" title="Image Set">
+                           {getIconForSet(session.imageSet)}
+                           <span className="capitalize">{session.imageSet} Set</span>
                         </div>
                     </div>
                   </CardContent>
