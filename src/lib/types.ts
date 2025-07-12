@@ -2,7 +2,7 @@
 export type SessionRecord = {
   id: string;
   date: string;
-  mode: 'normal' | 'precision' | 'speed' | 'shapes';
+  mode: 'normal' | 'precision' | 'speed' | 'shapes' | 'studio';
   totalDuration: number; // in seconds
   imagesCompleted: number;
   imageSet: 'custom' | 'ai';
