@@ -384,6 +384,20 @@ export default function LineFlowPracticePage() {
     return `${minutes}m ${remainingSeconds}s`;
   }
 
+  const formatDurations = (durations: number[]) => {
+    if (!durations || durations.length === 0) return 'N/A';
+
+    const counts: {[key: number]: number} = {};
+    durations.forEach(d => {
+      counts[d] = (counts[d] || 0) + 1;
+    });
+    
+    // Sort keys numerically
+    const sortedDurations = Object.keys(counts).map(Number).sort((a,b) => a - b);
+    
+    return sortedDurations.map(duration => `${counts[duration]} x ${duration}s`).join(', ');
+  }
+
   return (
     <div className="flex h-dvh bg-background text-foreground font-body">
       <aside className="w-[380px] flex-shrink-0 border-r bg-card flex flex-col">
@@ -420,12 +434,7 @@ export default function LineFlowPracticePage() {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-medium flex items-center gap-1.5"><Hourglass className="size-4" /> Time Per Image</span>
-                                    <span>
-                                        {images.length > 0 && sessionDurations.length > 0 ? 
-                                            `${sessionDurations[0]}s - ${sessionDurations[sessionDurations.length - 1]}s` : 
-                                            'N/A'
-                                        }
-                                    </span>
+                                    <span className="text-right">{formatDurations(sessionDurations)}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-medium flex items-center gap-1.5"><Info className="size-4" /> Minimum Time</span>
