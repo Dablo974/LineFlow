@@ -82,60 +82,59 @@ export default function LineFlowPracticePage() {
     }
   }, [searchParams, router]);
 
-  const calculateDurations = useCallback((numImages: number) => {
-    if (mode === 'normal' || numImages === 0) {
+  const calculateDurations = useCallback(() => {
+    if (mode === 'normal' || images.length === 0) {
       return [];
     }
-
-    const averageDuration = Math.floor(totalSessionDuration / numImages);
-
-    if (averageDuration < MIN_IMAGE_DURATION) {
-      // This should not happen if sessionImageCount is calculated correctly
-      return Array(numImages).fill(MIN_IMAGE_DURATION);
-    }
-    
-    // Create an arithmetic progression
-    const step = (numImages > 1) ? Math.max(1, Math.floor( (averageDuration - MIN_IMAGE_DURATION) / (numImages - 1) * 2)) : 0;
-    
+  
     let durations: number[] = [];
-    let firstTerm = averageDuration - Math.floor(((numImages - 1) * step) / 2);
-    if(firstTerm < MIN_IMAGE_DURATION) {
-        firstTerm = MIN_IMAGE_DURATION
+    let cumulativeTime = 0;
+    let stepDuration = 30;
+  
+    while (true) {
+      const timeForNextPair = stepDuration * 2;
+      if (cumulativeTime + timeForNextPair > totalSessionDuration) {
+        break;
+      }
+      
+      if (durations.length + 2 > images.length) {
+        break;
+      }
+  
+      durations.push(stepDuration, stepDuration);
+      cumulativeTime += timeForNextPair;
+      stepDuration += 30;
     }
     
-    for (let i = 0; i < numImages; i++) {
-        durations.push(firstTerm + i * step);
+    // Distribute remaining time
+    const remainingTime = totalSessionDuration - cumulativeTime;
+    if (durations.length > 0) {
+      const adjustmentPerImage = Math.floor(remainingTime / durations.length);
+      const remainder = remainingTime % durations.length;
+      
+      durations = durations.map((d, i) => d + adjustmentPerImage + (i < remainder ? 1 : 0));
     }
 
-    // Adjust to match total duration
-    const currentTotal = durations.reduce((a, b) => a + b, 0);
-    const diff = totalSessionDuration - currentTotal;
-    const adjustment = numImages > 0 ? Math.floor(diff / numImages) : 0;
-    const remainder = numImages > 0 ? diff % numImages : 0;
-
-    durations = durations.map((d, i) => d + adjustment + (i < remainder ? 1 : 0));
-    
-    // Ensure no duration is below the minimum
-    durations = durations.map(d => Math.max(MIN_IMAGE_DURATION, d));
-
+    if (durations.length === 0 && images.length > 0) {
+        const singleImageDuration = Math.min(totalSessionDuration, Math.max(MIN_IMAGE_DURATION, totalSessionDuration));
+        if (images.length > 0) {
+             durations.push(singleImageDuration);
+        }
+    }
+  
     if (mode === 'speed') {
-        return durations.reverse();
+      return durations.sort((a,b) => b-a);
     }
-    return durations;
-  }, [mode, totalSessionDuration]);
+    return durations.sort((a,b) => a-b);
+  
+  }, [mode, totalSessionDuration, images.length]);
+  
 
   useEffect(() => {
     if (mode !== 'normal') {
-      const maxImages = Math.floor(totalSessionDuration / MIN_IMAGE_DURATION);
-      const numToUse = Math.min(images.length, maxImages);
-      setSessionImageCount(numToUse);
-
-      if (numToUse > 0) {
-        const calculated = calculateDurations(numToUse);
-        setSessionDurations(calculated);
-      } else {
-        setSessionDurations([]);
-      }
+      const calculated = calculateDurations();
+      setSessionDurations(calculated);
+      setSessionImageCount(calculated.length);
     } else {
       setSessionImageCount(images.length);
       setSessionDurations([]);
@@ -172,6 +171,12 @@ export default function LineFlowPracticePage() {
     if (sessionImageOrder.length === 0) return;
     
     const nextIndex = (currentImageIndex + 1) % sessionImageOrder.length;
+    
+    if (nextIndex === 0 && sessionState === 'running') {
+        handleReset();
+        return;
+    }
+
     setCurrentImageIndex(nextIndex);
     setDisplayState('image');
 
@@ -237,9 +242,7 @@ export default function LineFlowPracticePage() {
 
       let imageOrder = imagePool;
       if(mode !== 'normal') {
-        const maxImages = Math.floor(totalSessionDuration / MIN_IMAGE_DURATION);
-        const numToUse = Math.min(images.length, maxImages);
-        imageOrder = imagePool.slice(0, numToUse);
+        imageOrder = imagePool.slice(0, sessionImageCount);
       }
       
       setSessionImageOrder(imageOrder);
@@ -256,6 +259,10 @@ export default function LineFlowPracticePage() {
   const handleSessionToggle = () => {
     if (images.length === 0) {
       toast({ title: 'No images loaded', description: 'Please load images before starting.', variant: 'destructive' });
+      return;
+    }
+     if (mode !== 'normal' && sessionImageCount === 0) {
+      toast({ title: 'Session too short', description: 'Increase total duration or load more images.', variant: 'destructive' });
       return;
     }
     if (sessionState === 'running') {
@@ -589,5 +596,3 @@ export default function LineFlowPracticePage() {
     </div>
   );
 }
-
-    
