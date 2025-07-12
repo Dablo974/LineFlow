@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
-import { Pause, Play, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Home, History, ArrowLeft, Wand2, LoaderCircle, Sparkles } from 'lucide-react';
+import { Pause, Play, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, Home, History, ArrowLeft, Wand2, LoaderCircle, Sparkles, Images, Trash2 } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,6 +26,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type SessionState = 'idle' | 'generating' | 'running' | 'paused' | 'finished';
 type DisplayState = 'image' | 'interval';
@@ -190,12 +191,17 @@ export default function AIShapesPracticePage() {
     
     try {
       const generatedImages = [];
-      for (let i = 0; i < imageCount; i++) {
+      const imagePromises = Array.from({ length: imageCount }, (_, i) => async () => {
         const result = await generateShape(values);
         generatedImages.push(result.imageDataUri);
         setImages([...generatedImages]);
         setGenerationProgress(((i + 1) / imageCount) * 100);
+      });
+
+      for (const promise of imagePromises) {
+        await promise();
       }
+      
       setSessionState('idle');
       toast({ title: "Images generated!", description: "Press Start Session to begin." });
     } catch (error) {
@@ -233,10 +239,14 @@ export default function AIShapesPracticePage() {
   };
 
   const handleReset = () => {
-     setSessionState('idle');
-     setDisplayState('image');
-     setTimeRemaining(duration);
-     setCurrentImageIndex(0);
+     if (sessionState === 'running' || sessionState === 'paused') {
+      endSession();
+    } else {
+      setSessionState('idle');
+      setDisplayState('image');
+      setTimeRemaining(duration);
+      setCurrentImageIndex(0);
+    }
   };
   
   const resetTimerAndDisplay = () => {
@@ -263,9 +273,23 @@ export default function AIShapesPracticePage() {
   };
 
   const removeImage = (indexToRemove: number) => {
-    const updatedImages = images.filter((_, index) => index !== indexToRemove);
-    setImages(updatedImages);
+    setImages(prevImages => {
+      const updatedImages = prevImages.filter((_, index) => index !== indexToRemove);
+      if (updatedImages.length === 0 && sessionState !== 'idle' && sessionState !== 'generating') {
+        handleReset();
+      } else if (currentImageIndex >= updatedImages.length && updatedImages.length > 0) {
+        setCurrentImageIndex(updatedImages.length - 1);
+      }
+      return updatedImages;
+    });
   };
+
+  const clearImages = () => {
+    setImages([]);
+    if (sessionState !== 'idle' && sessionState !== 'generating') {
+      handleReset();
+    }
+  }
   
   const progressValue = displayState === 'image' 
     ? (timeRemaining / currentDuration) * 100 
@@ -334,69 +358,95 @@ export default function AIShapesPracticePage() {
             </div>
           </header>
           
-          <div className="flex-1 p-4 space-y-6 overflow-y-auto">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleGenerateImages)} className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="size-5 text-primary" /> AI Shape Generator</CardTitle>
-                    <CardDescription>Describe a shape, and we'll generate reference images for you.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                     <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Shape Description</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., A pyramid" {...field} disabled={isGenerating} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="space-y-2">
-                      <Label htmlFor="image-count">Number of Images: {imageCount}</Label>
-                      <Slider id="image-count" value={[imageCount]} onValueChange={(val) => setImageCount(val[0])} min={1} max={20} step={1} disabled={isGenerating} />
-                    </div>
-                    <div className="relative">
-                      <Button type="submit" className="w-full" disabled={isGenerating}>
-                        {isGenerating ? <LoaderCircle className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
-                        {isGenerating ? `Generating ${Math.round(generationProgress)}%` : `Generate ${imageCount} Images`}
-                      </Button>
-                      {isGenerating && (
-                        <Progress value={generationProgress} className="absolute bottom-[-4px] left-0 right-0 h-1 bg-primary/20" indicatorClassName="bg-primary" />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5 text-primary" /> Session Settings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleGenerateImages)} className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="size-5 text-primary" /> AI Shape Generator</CardTitle>
+                      <CardDescription>Describe a shape, and we'll generate reference images for you.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Shape Description</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., A pyramid" {...field} disabled={isGenerating} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <div className="space-y-2">
-                        <Label htmlFor="duration">Image Duration: {formatTime(duration)}</Label>
-                        <Slider id="duration" value={[duration]} onValueChange={(val) => setDuration(val[0])} min={5} max={300} step={5} />
+                        <Label htmlFor="image-count">Number of Images: {imageCount}</Label>
+                        <Slider id="image-count" value={[imageCount]} onValueChange={(val) => setImageCount(val[0])} min={1} max={20} step={1} disabled={isGenerating} />
                       </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="interval">Interval Duration: {formatTime(intervalDuration)}</Label>
-                      <Slider id="interval" value={[intervalDuration]} onValueChange={(val) => setIntervalDuration(val[0])} min={0} max={30} step={1} />
-                    </div>
-                    <div className="flex items-center justify-between pt-2">
-                      <Label htmlFor="audible-alerts" className="flex items-center gap-2">
-                        <Bell className="size-4" />
-                        Audible Alerts
-                      </Label>
-                      <Switch id="audible-alerts" checked={audibleAlerts} onCheckedChange={setAudibleAlerts} />
-                    </div>
+                      <div className="relative">
+                        <Button type="submit" className="w-full" disabled={isGenerating}>
+                          {isGenerating ? <LoaderCircle className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
+                          {isGenerating ? `Generating ${Math.round(generationProgress)}%` : `Generate ${imageCount} Images`}
+                        </Button>
+                        {isGenerating && (
+                          <Progress value={generationProgress} className="absolute bottom-[-4px] left-0 right-0 h-1 bg-primary/20" indicatorClassName="bg-primary" />
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </form>
+              </Form>
+
+               {images.length > 0 && (
+                <Card>
+                  <CardHeader className="flex flex-row justify-between items-center">
+                    <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5 text-primary" /> Generated Set</CardTitle>
+                    <Button onClick={clearImages} variant="destructive" size="sm">
+                      <Trash2 className="mr-2" /> Clear
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-40 w-full rounded-md border p-2">
+                        <div className="space-y-2">
+                          {images.map((imgSrc, index) => (
+                            <div key={`${imgSrc.slice(-20)}-${index}`} className="flex items-center gap-2 p-1 rounded-md animate-in fade-in">
+                              <Image src={imgSrc} alt={`Generated Reference ${index + 1}`} width={40} height={40} className="rounded object-cover aspect-square" />
+                              <span className="text-sm truncate flex-1">{form.getValues('description')} #{index + 1}</span>
+                              <Button variant="ghost" size="icon" className="size-7" onClick={() => removeImage(index)}><X className="size-4" /></Button>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
                   </CardContent>
                 </Card>
-              </form>
-            </Form>
-          </div>
+              )}
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5 text-primary" /> Session Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="duration">Image Duration: {formatTime(duration)}</Label>
+                      <Slider id="duration" value={[duration]} onValueChange={(val) => setDuration(val[0])} min={5} max={300} step={5} />
+                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="interval">Interval Duration: {formatTime(intervalDuration)}</Label>
+                    <Slider id="interval" value={[intervalDuration]} onValueChange={(val) => setIntervalDuration(val[0])} min={0} max={30} step={1} />
+                  </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <Label htmlFor="audible-alerts" className="flex items-center gap-2">
+                      <Bell className="size-4" />
+                      Audible Alerts
+                    </Label>
+                    <Switch id="audible-alerts" checked={audibleAlerts} onCheckedChange={setAudibleAlerts} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </ScrollArea>
 
           <footer className="p-4 border-t mt-auto bg-muted/20">
             <div className="flex items-center gap-2">
@@ -530,3 +580,5 @@ export default function AIShapesPracticePage() {
     </>
   );
 }
+
+    
