@@ -31,11 +31,21 @@ const modes = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground relative overflow-hidden">
+      <div className="absolute top-0 left-0 -translate-x-1/3 -translate-y-1/3 opacity-20 text-accent">
+        <svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M-50 400C-50 151.472 151.472 -50 400 -50C648.528 -50 850 151.472 850 400C850 648.528 648.528 850 400 850" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      </div>
+       <div className="absolute bottom-0 right-0 translate-x-1/3 translate-y-1/3 opacity-20 text-primary">
+        <svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M850 400C850 648.528 648.528 850 400 850C151.472 850 -50 648.528 -50 400C-50 151.472 151.472 -50 400 -50" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      </div>
       <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
-      <div className="flex flex-col items-center justify-center min-h-dvh p-4">
+      <div className="flex flex-col items-center justify-center min-h-dvh p-4 relative z-0">
         <header className="mb-12 text-center">
           <div className="inline-block">
           <LineFlowLogo className="text-3xl" />
@@ -47,7 +57,7 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold text-center mb-8">Choose Your Practice Mode</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {modes.map((mode) => (
-              <Card key={mode.name} className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <Card key={mode.name} className="flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
                   <div className="p-3 bg-primary/10 rounded-full">
                       {mode.icon}
