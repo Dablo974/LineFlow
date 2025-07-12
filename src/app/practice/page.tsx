@@ -450,9 +450,9 @@ export default function LineFlowPracticePage() {
         onClose={handleCloseSummary}
         session={lastSession}
       />
-      <div className="flex h-dvh bg-slate-900 text-foreground font-body">
-        <aside className="w-[380px] flex-shrink-0 border-r bg-slate-950 flex flex-col">
-          <header className="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div className="flex h-dvh bg-background text-foreground">
+        <aside className="w-[380px] flex-shrink-0 border-r bg-muted/20 flex flex-col">
+          <header className="p-4 border-b flex items-center justify-between">
             <LineFlowLogo />
             <div className="flex items-center gap-2">
               <ThemeToggle />
@@ -466,7 +466,7 @@ export default function LineFlowPracticePage() {
           
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-6">
-              <Card className="bg-slate-900/50 border-slate-800">
+              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5 text-primary" /> {getModeName(mode)} Mode Settings</CardTitle>
                 </CardHeader>
@@ -482,7 +482,7 @@ export default function LineFlowPracticePage() {
                               <Label htmlFor="total-duration">Total Session Duration: {formatTime(totalSessionDuration)}</Label>
                               <Slider id="total-duration" value={[totalSessionDuration]} onValueChange={(val) => setTotalSessionDuration(val[0])} min={60} max={3600} step={60} />
                           </div>
-                          <Card className="bg-slate-800/50 border-slate-700">
+                          <Card className="bg-muted/50">
                               <CardContent className="p-3 text-sm text-muted-foreground space-y-2">
                                   <div className="flex justify-between items-center">
                                       <span className="font-medium flex items-center gap-1.5"><Images className="size-4" /> Images In Session</span>
@@ -514,7 +514,7 @@ export default function LineFlowPracticePage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-900/50 border-slate-800">
+              <Card>
                 <CardHeader className="flex flex-row justify-between items-center">
                   <CardTitle className="flex items-center gap-2 text-lg"><Images className="size-5 text-primary" /> Image Set</CardTitle>
                   <Button asChild variant="ghost" size="sm">
@@ -550,7 +550,7 @@ export default function LineFlowPracticePage() {
                   </div>
                   
                   {images.length > 0 && (
-                    <ScrollArea className="h-40 w-full rounded-md border border-slate-800 p-2">
+                    <ScrollArea className="h-40 w-full rounded-md border p-2">
                       <div className="space-y-2">
                         {images.map((imgSrc, index) => (
                           <div key={`${imgSrc}-${index}`} className="flex items-center gap-2 p-1 rounded-md animate-in fade-in">
@@ -567,7 +567,7 @@ export default function LineFlowPracticePage() {
             </div>
           </ScrollArea>
 
-          <footer className="p-4 border-t border-slate-800 mt-auto bg-slate-950">
+          <footer className="p-4 border-t mt-auto bg-muted/20">
             <div className="flex items-center gap-2">
               <Button onClick={handleSessionToggle} className="w-full" size="lg" disabled={images.length === 0}>
                 {sessionState === 'running' ? <Pause className="mr-2" /> : <Play className="mr-2" />}
@@ -580,7 +580,7 @@ export default function LineFlowPracticePage() {
           </footer>
         </aside>
 
-        <main className="flex-1 flex flex-col items-center justify-center p-8 relative transition-all duration-300 bg-slate-900">
+        <main className="flex-1 flex flex-col items-center justify-center p-8 relative transition-all duration-300">
           <TooltipProvider>
             {(sessionState === 'running' || sessionState === 'paused') ? (
               <div className="w-full h-full flex flex-col items-center justify-center">
@@ -588,7 +588,7 @@ export default function LineFlowPracticePage() {
                     <div className="text-xl font-mono font-semibold text-foreground w-40 text-right">
                       {formatTime(timeRemaining)} / {displayState === 'image' ? formatTime(currentDuration) : formatTime(intervalDuration)}
                     </div>
-                    <Progress value={progressValue} className="h-2.5 transition-all flex-1 bg-slate-800" indicatorStyle={getProgressStyle()} />
+                    <Progress value={progressValue} className="h-2.5 transition-all flex-1 bg-muted" indicatorStyle={getProgressStyle()} />
                 </div>
                 
                 <div className="relative w-full h-full pt-16">
@@ -600,7 +600,7 @@ export default function LineFlowPracticePage() {
                             onClick={handlePreviousImage} 
                             variant="ghost" 
                             size="icon" 
-                            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-slate-950/50 hover:bg-slate-950/80"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
                           >
                             <ChevronLeft className="size-6" />
                           </Button>
@@ -616,7 +616,7 @@ export default function LineFlowPracticePage() {
                             onClick={handleNextImage} 
                             variant="ghost" 
                             size="icon" 
-                            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-slate-950/50 hover:bg-slate-950/80"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
                           >
                             <ChevronRight className="size-6" />
                           </Button>
@@ -651,7 +651,7 @@ export default function LineFlowPracticePage() {
                             key={nextImageSrc}
                         />
                       )}
-                      <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full z-10 bg-slate-950/50 backdrop-blur-sm p-8 rounded-lg">
+                      <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full z-10 bg-background/50 backdrop-blur-sm p-8 rounded-lg">
                           <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
                           <h2 className="text-3xl font-bold text-foreground">Interval</h2>
                           <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
@@ -661,7 +661,7 @@ export default function LineFlowPracticePage() {
                 </div>
                 
                 {sessionState === 'paused' && (
-                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 z-30 animate-in fade-in">
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 z-30 animate-in fade-in">
                         <Pause className="size-16 text-primary" />
                         <p className="text-2xl font-semibold text-foreground">Paused</p>
                     </div>

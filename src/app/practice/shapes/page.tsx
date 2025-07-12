@@ -29,15 +29,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 
 type SessionState = 'idle' | 'generating' | 'running' | 'paused' | 'finished';
 type DisplayState = 'image' | 'interval';
-type GenerateShapeInput = z.infer<typeof GenerateShapeInputSchema>;
-interface GenerateShapeOutput {
-  imageDataUri: string;
-}
-
 
 const GenerateShapeInputSchema = z.object({
   description: z.string().min(3, "Please enter a more descriptive prompt.").describe('A text description of the geometric shape to generate. e.g., "a cube", "two intersecting spheres"'),
 });
+
+type GenerateShapeInput = z.infer<typeof GenerateShapeInputSchema>;
 
 const getModeName = () => 'AI Shapes';
 
@@ -323,9 +320,9 @@ export default function AIShapesPracticePage() {
         onClose={handleCloseSummary}
         session={lastSession}
       />
-      <div className="flex h-dvh bg-background text-foreground font-body">
-        <aside className="w-[380px] flex-shrink-0 border-r bg-slate-950 flex flex-col">
-          <header className="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div className="flex h-dvh bg-background text-foreground">
+        <aside className="w-[380px] flex-shrink-0 border-r bg-muted/20 flex flex-col">
+          <header className="p-4 border-b flex items-center justify-between">
             <LineFlowLogo />
             <div className="flex items-center gap-2">
               <ThemeToggle />
@@ -340,7 +337,7 @@ export default function AIShapesPracticePage() {
           <div className="flex-1 p-4 space-y-6 overflow-y-auto">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleGenerateImages)} className="space-y-6">
-                <Card className="bg-slate-900/50 border-slate-800">
+                <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="size-5 text-primary" /> AI Shape Generator</CardTitle>
                     <CardDescription>Describe a shape, and we'll generate reference images for you.</CardDescription>
@@ -375,7 +372,7 @@ export default function AIShapesPracticePage() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-slate-900/50 border-slate-800">
+                <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg"><Timer className="size-5 text-primary" /> Session Settings</CardTitle>
                   </CardHeader>
@@ -401,7 +398,7 @@ export default function AIShapesPracticePage() {
             </Form>
           </div>
 
-          <footer className="p-4 border-t border-slate-800 mt-auto bg-slate-950">
+          <footer className="p-4 border-t mt-auto bg-muted/20">
             <div className="flex items-center gap-2">
               <Button onClick={handleSessionToggle} className="w-full" size="lg" disabled={images.length === 0 || isGenerating}>
                 {sessionState === 'running' ? <Pause className="mr-2" /> : <Play className="mr-2" />}
@@ -414,7 +411,7 @@ export default function AIShapesPracticePage() {
           </footer>
         </aside>
 
-        <main className="flex-1 flex flex-col items-center justify-center p-8 relative transition-all duration-300 bg-slate-900">
+        <main className="flex-1 flex flex-col items-center justify-center p-8 relative transition-all duration-300">
           <TooltipProvider>
             {(sessionState === 'running' || sessionState === 'paused') ? (
               <div className="w-full h-full flex flex-col items-center justify-center">
@@ -422,7 +419,7 @@ export default function AIShapesPracticePage() {
                     <div className="text-xl font-mono font-semibold text-foreground w-40 text-right">
                       {formatTime(timeRemaining)} / {displayState === 'image' ? formatTime(currentDuration) : formatTime(intervalDuration)}
                     </div>
-                    <Progress value={progressValue} className="h-2.5 transition-all flex-1 bg-slate-800" indicatorStyle={getProgressStyle()} />
+                    <Progress value={progressValue} className="h-2.5 transition-all flex-1 bg-muted" indicatorStyle={getProgressStyle()} />
                 </div>
                 
                 <div className="relative w-full h-full pt-16">
@@ -434,7 +431,7 @@ export default function AIShapesPracticePage() {
                             onClick={handlePreviousImage} 
                             variant="ghost" 
                             size="icon" 
-                            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-slate-950/50 hover:bg-slate-950/80"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
                           >
                             <ChevronLeft className="size-6" />
                           </Button>
@@ -450,7 +447,7 @@ export default function AIShapesPracticePage() {
                             onClick={handleNextImage} 
                             variant="ghost" 
                             size="icon" 
-                            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-slate-950/50 hover:bg-slate-950/80"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
                           >
                             <ChevronRight className="size-6" />
                           </Button>
@@ -485,7 +482,7 @@ export default function AIShapesPracticePage() {
                             key={nextImageSrc}
                         />
                       )}
-                      <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full z-10 bg-slate-950/50 backdrop-blur-sm p-8 rounded-lg">
+                      <div className="text-center text-muted-foreground max-w-sm animate-in fade-in flex flex-col items-center justify-center h-full z-10 bg-background/50 backdrop-blur-sm p-8 rounded-lg">
                           <Hourglass className="mx-auto h-16 w-16 mb-4 text-primary" />
                           <h2 className="text-3xl font-bold text-foreground">Interval</h2>
                           <p className="mt-2 leading-relaxed">Prepare for the next image.</p>
@@ -495,7 +492,7 @@ export default function AIShapesPracticePage() {
                 </div>
                 
                 {sessionState === 'paused' && (
-                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 z-30 animate-in fade-in">
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center flex-col gap-4 z-30 animate-in fade-in">
                         <Pause className="size-16 text-primary" />
                         <p className="text-2xl font-semibold text-foreground">Paused</p>
                     </div>
@@ -509,12 +506,12 @@ export default function AIShapesPracticePage() {
                             <Progress value={generationProgress} className="w-full h-2" />
                             <div className="grid grid-cols-5 gap-4">
                               {images.map((imgSrc, index) => (
-                                <div key={index} className="aspect-square bg-slate-800 rounded-md animate-in fade-in">
+                                <div key={index} className="aspect-square bg-muted rounded-md animate-in fade-in">
                                   <Image src={imgSrc} alt={`Generated ref ${index}`} width={100} height={100} className="rounded-md object-cover w-full h-full" />
                                 </div>
                               ))}
                               {Array.from({length: imageCount - images.length}).map((_, index) => (
-                                <div key={index} className="aspect-square bg-slate-800/50 rounded-md animate-pulse" />
+                                <div key={index} className="aspect-square bg-muted/50 rounded-md animate-pulse" />
                               ))}
                             </div>
                         </div>
@@ -533,5 +530,3 @@ export default function AIShapesPracticePage() {
     </>
   );
 }
-
-    
