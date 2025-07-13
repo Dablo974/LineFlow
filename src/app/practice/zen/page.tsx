@@ -201,7 +201,7 @@ export default function ZenPracticePage() {
                       onClick={handlePreviousImage} 
                       variant="ghost" 
                       size="icon" 
-                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-primary/90 hover:text-primary-foreground"
                     >
                       <ChevronLeft className="size-6" />
                     </Button>
@@ -217,7 +217,7 @@ export default function ZenPracticePage() {
                       onClick={handleNextImage} 
                       variant="ghost" 
                       size="icon" 
-                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/50 hover:bg-primary/90 hover:text-primary-foreground"
                     >
                       <ChevronRight className="size-6" />
                     </Button>
