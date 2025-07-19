@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
-import { Pause, Play, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, ArrowLeft, Wand2, LoaderCircle, Images, Trash2, Target } from 'lucide-react';
+import { Pause, Play, X, Timer, Hourglass, ChevronLeft, ChevronRight, Bell, ArrowLeft, Wand2, LoaderCircle, Images, Trash2, Target, ChevronsUpDown } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -21,6 +21,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import Link from 'next/link';
 import { generatePose } from '@/ai/flows/generate-pose-flow';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type SessionState = 'idle' | 'generating' | 'running' | 'paused' | 'finished';
 type DisplayState = 'image' | 'interval';
@@ -195,6 +196,7 @@ export default function AnatomyChallengePage() {
         setGenerationProgress(((i + 1) / imageCount) * 100);
       });
 
+      // Run promises sequentially to avoid rate limiting
       for (const promise of imagePromises) {
         await promise();
       }
@@ -361,10 +363,23 @@ export default function AnatomyChallengePage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg"><Target className="size-5 text-primary" /> Daily Anatomy Challenge</CardTitle>
                     <CardDescription>
-                      Today's focus is: <strong className="text-primary capitalize">{partOfDay}</strong>.
+                      Today's focus is <strong className="text-primary capitalize">{getAnatomyPartForDay()}</strong>. Feel free to choose another area to study.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                     <div className="space-y-2">
+                        <Label>Anatomy Focus</Label>
+                        <Select value={partOfDay} onValueChange={setPartOfDay} disabled={isGenerating}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a body part..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ANATOMY_PARTS.map(part => (
+                                    <SelectItem key={part} value={part} className="capitalize">{part}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="image-count">Number of Images: {imageCount}</Label>
                       <Slider id="image-count" value={[imageCount]} onValueChange={(val) => setImageCount(val[0])} min={1} max={20} step={1} disabled={isGenerating} />
@@ -552,7 +567,7 @@ export default function AnatomyChallengePage() {
                             <Target className="mx-auto h-16 w-16 mb-4 text-primary" />
                             <h2 className="text-3xl font-bold text-foreground">Daily Anatomy Challenge</h2>
                             <p className="mt-2 leading-relaxed">
-                              Today's challenge is <strong className="text-primary/90 capitalize">{partOfDay}</strong>. Set your session preferences and hit "Generate" to start.
+                              Today's challenge is <strong className="text-primary/90 capitalize">{getAnatomyPartForDay()}</strong>. Set your session preferences and hit "Generate" to start.
                             </p>
                         </>
                     )}
@@ -564,3 +579,5 @@ export default function AnatomyChallengePage() {
     </>
   );
 }
+
+    
