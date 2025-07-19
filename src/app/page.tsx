@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineFlowLogo } from '@/components/lineflow-logo';
-import { ArrowRight, TrendingUp, TrendingDown, Hourglass, History, Sparkles, PenTool, Wind } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Hourglass, History, Sparkles, PenTool, Wind, Target } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const modes = [
@@ -38,11 +38,12 @@ const modes = [
 
 const aiModes = [
   {
-    name: 'AI Shape Generator',
-    description: 'Generate geometric shapes from any angle for fundamental practice.',
-    href: '/practice/shapes',
-    icon: <Sparkles className="size-8 text-primary" />,
-    cta: 'Start Generating'
+    name: 'Daily Anatomy Challenge',
+    description: 'A new anatomy challenge every day to sharpen your skills.',
+    href: '/practice/anatomy',
+    icon: <Target className="size-8 text-accent" />,
+    cta: 'Start Challenge',
+    accent: true
   },
   {
     name: 'AI Pose Generator',
@@ -51,7 +52,14 @@ const aiModes = [
     icon: <PenTool className="size-8 text-accent" />,
     cta: 'Enter Generator',
     accent: true
-  }
+  },
+  {
+    name: 'AI Shape Generator',
+    description: 'Generate geometric shapes from any angle for fundamental practice.',
+    href: '/practice/shapes',
+    icon: <Sparkles className="size-8 text-primary" />,
+    cta: 'Start Generating'
+  },
 ];
 
 export default function HomePage() {
@@ -88,9 +96,9 @@ export default function HomePage() {
               </Link>
             </Button>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {modes.map((mode) => (
                 <Card key={mode.name} className="group flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur-sm">
                   <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
@@ -121,7 +129,7 @@ export default function HomePage() {
                         {mode.icon}
                     </div>
                     <div className="flex-1">
-                      <CardTitle className={mode.accent ? 'text-accent' : ''}>{mode.name}</CardTitle>
+                      <CardTitle className={`text-xl ${mode.accent ? 'text-accent' : ''}`}>{mode.name}</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col justify-between">

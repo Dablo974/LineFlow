@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, Clock, History, Home, ImageIcon, Sparkles, Folder } from 'lucide-react';
+import { CheckCircle, Clock, History, Home, ImageIcon, Sparkles, Folder, Target } from 'lucide-react';
 import type { SessionRecord } from '@/lib/types';
 
 interface SessionSummaryDialogProps {
@@ -27,6 +27,9 @@ const getModeName = (mode: SessionRecord['mode']) => {
         case 'precision': return 'Precision';
         case 'speed': return 'Speed';
         case 'shapes': return 'AI Shapes';
+        case 'poses': return 'AI Poses';
+        case 'anatomy': return 'Anatomy Challenge';
+        case 'zen': return 'Zen Mode';
         default: return 'Normal';
     }
 }

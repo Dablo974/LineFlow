@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { SessionRecord } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Clock, History, ImageIcon, Timer, Sparkles, Folder } from 'lucide-react';
+import { ArrowLeft, Clock, History, ImageIcon, Timer, Sparkles, Folder, Target } from 'lucide-react';
 import { LineFlowLogo } from '@/components/lineflow-logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -19,6 +19,9 @@ const getModeName = (mode: SessionRecord['mode']) => {
         case 'precision': return 'Precision';
         case 'speed': return 'Speed';
         case 'shapes': return 'AI Shapes';
+        case 'poses': return 'AI Poses';
+        case 'anatomy': return 'Anatomy Challenge';
+        case 'zen': return 'Zen Mode';
         default: return 'Normal';
     }
 }
