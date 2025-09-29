@@ -39,6 +39,8 @@ type GenerateShapeInput = z.infer<typeof GenerateShapeInputSchema>;
 
 const getModeName = () => 'AI Shapes';
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export default function AIShapesPracticePage() {
   const router = useRouter();
   
@@ -196,6 +198,7 @@ export default function AIShapesPracticePage() {
         generatedImages.push(result.imageDataUri);
         setImages([...generatedImages]);
         setGenerationProgress(((i + 1) / imageCount) * 100);
+        await delay(1000); // Wait 1 second before the next request
       });
 
       for (const promise of imagePromises) {
@@ -580,3 +583,5 @@ export default function AIShapesPracticePage() {
     </>
   );
 }
+
+    

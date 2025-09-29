@@ -38,6 +38,8 @@ type GeneratePoseInput = z.infer<typeof GeneratePoseInputSchema>;
 
 const getModeName = () => 'AI Poses';
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export default function AIPosesPracticePage() {
   const router = useRouter();
   
@@ -195,6 +197,7 @@ export default function AIPosesPracticePage() {
         generatedImages.push(result.imageDataUri);
         setImages([...generatedImages]);
         setGenerationProgress(((i + 1) / imageCount) * 100);
+        await delay(1000); // Wait 1 second before the next request
       });
 
       for (const promise of imagePromises) {
@@ -579,3 +582,5 @@ export default function AIPosesPracticePage() {
     </>
   );
 }
+
+    

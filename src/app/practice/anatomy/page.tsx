@@ -38,6 +38,8 @@ const getAnatomyPartForDay = () => {
     return ANATOMY_PARTS[dayOfYear % ANATOMY_PARTS.length];
 };
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export default function AnatomyChallengePage() {
   const [partOfDay, setPartOfDay] = useState('');
   
@@ -194,6 +196,7 @@ export default function AnatomyChallengePage() {
         generatedImages.push(result.imageDataUri);
         setImages([...generatedImages]);
         setGenerationProgress(((i + 1) / imageCount) * 100);
+        await delay(1000); // Wait 1 second before the next request
       });
 
       // Run promises sequentially to avoid rate limiting
