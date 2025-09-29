@@ -12,7 +12,7 @@ import type { GenerateShapeInput, GenerateShapeOutput } from '@/lib/types';
 
 export async function generateShape(input: GenerateShapeInput): Promise<GenerateShapeOutput> {
   const { media } = await ai.generate({
-    model: 'googleai/gemini-2.0-flash-preview-image-generation',
+    model: 'googleai/gemini-2.5-flash-image-preview',
     prompt: `Generate a clean, high-contrast, black and white reference image for an artist to practice drawing. The image should feature a single object: **${input.description}**.
     
     Place it on a plain, neutral grey background. The camera angle should be unique and interesting, showing the object from a random perspective.
@@ -23,10 +23,9 @@ export async function generateShape(input: GenerateShapeInput): Promise<Generate
     },
   });
 
-  const imageDataUri = media.url;
-  if (!imageDataUri) {
+  if (!media?.url) {
     throw new Error('Image generation failed to return a data URI.');
   }
 
-  return { imageDataUri };
+  return { imageDataUri: media.url };
 }
